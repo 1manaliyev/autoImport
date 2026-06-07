@@ -1,0 +1,1238 @@
+(function () {
+  "use strict";
+
+  var segmentContent = {
+    family: {
+      title: "Семейный автомобиль с проверкой и доставкой за 30–60 дней",
+      text:
+        "Подбираем авто с учётом безопасности, комфорта и бюджета без переплаты рынку РФ.",
+      benefits: [
+        "Больше автомобиля за те же деньги",
+        "Лучше комплектация",
+        "Меньше рисков",
+      ],
+      examples: "Kia Sorento, Hyundai Santa Fe",
+    },
+    value: {
+      title: "Автомобиль дешевле рынка РФ без скрытых проблем",
+      text:
+        "Покажем реальные варианты с честным пробегом и прозрачной ценой.",
+      benefits: [
+        "Максимальная экономия",
+        "Прозрачная стоимость",
+        "Реальные авто",
+      ],
+      examples: "Hyundai Tucson, Kia Sportage",
+    },
+    modern: {
+      title: "Современные автомобили с технологиями и опциями",
+      text:
+        "Подбираем свежие модели с мультимедиа, ассистентами и современным дизайном.",
+      benefits: [
+        "Больше опций",
+        "Свежие модели",
+        "Современный дизайн",
+      ],
+      examples: "Li Xiang L7, Zeekr 001, Geely Monjaro",
+    },
+    premium: {
+      title: "Премиальные автомобили без переплаты",
+      text:
+        "Подбираем авто с минимальным пробегом и высокой комплектацией.",
+      benefits: [
+        "Премиум дешевле",
+        "Редкие версии",
+        "Минимальный пробег",
+      ],
+      examples: "BMW X3, Mercedes GLC",
+    },
+    power: {
+      title: "Мощные автомобили и редкие комплектации",
+      text: "Автомобили для тех, кто ищет эмоции и динамику.",
+      benefits: [
+        "Мощные двигатели",
+        "Редкие версии",
+        "Уникальные комплектации",
+      ],
+      examples: "Ford Mustang, BMW M, Mercedes AMG",
+    },
+  };
+
+  function qs(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function qsa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  /* Mobile nav */
+  var burger = qs("[data-burger]");
+  var navWrap = qs("[data-nav-wrap]");
+  if (burger && navWrap) {
+    burger.addEventListener("click", function () {
+      navWrap.classList.toggle("is-open");
+      burger.setAttribute(
+        "aria-expanded",
+        navWrap.classList.contains("is-open") ? "true" : "false"
+      );
+    });
+    qsa("a", navWrap).forEach(function (a) {
+      a.addEventListener("click", function () {
+        navWrap.classList.remove("is-open");
+        burger.setAttribute("aria-expanded", "false");
+      });
+    });
+  }
+
+  /* City picker */
+  var cityEl = qs("[data-city-display]");
+  var cityBtn = qs("[data-city-change]");
+  var cityPicker = cityEl && cityEl.closest(".city-picker");
+  var cityStorageKey = "autoImportCity";
+
+  function setCity(city) {
+    if (!cityEl || !city) return;
+    cityEl.textContent = city;
+    try {
+      window.localStorage.setItem(cityStorageKey, city);
+    } catch (e) {}
+  }
+
+  function formatCity(item) {
+    var parts = [item.name, item.admin1, item.country].filter(Boolean);
+    return parts.join(", ");
+  }
+
+  function detectCity(statusEl) {
+    if (!navigator.geolocation) {
+      if (statusEl) statusEl.textContent = "Геолокация не поддерживается браузером.";
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = "Определяем город...";
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var coords = pos.coords;
+        var url =
+          "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
+          encodeURIComponent(coords.latitude) +
+          "&longitude=" +
+          encodeURIComponent(coords.longitude) +
+          "&localityLanguage=ru";
+
+        fetch(url)
+          .then(function (res) {
+            if (!res.ok) throw new Error("Geo request failed");
+            return res.json();
+          })
+          .then(function (data) {
+            var city = data.city || data.locality || data.principalSubdivision;
+            if (!city) throw new Error("City not found");
+            setCity(city);
+            if (statusEl) statusEl.textContent = "Город определён автоматически.";
+          })
+          .catch(function () {
+            if (statusEl) statusEl.textContent = "Не удалось определить город.";
+          });
+      },
+      function () {
+        if (statusEl) statusEl.textContent = "Разрешите доступ к геолокации или введите город.";
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
+    );
+  }
+
+  if (cityPicker && cityBtn && cityEl) {
+    var savedCity = "";
+    try {
+      savedCity = window.localStorage.getItem(cityStorageKey) || "";
+    } catch (e) {}
+    cityEl.textContent = savedCity || cityEl.textContent.trim() || "Москва";
+
+    var dropdown = document.createElement("div");
+    dropdown.className = "city-picker__dropdown";
+    dropdown.setAttribute("data-city-dropdown", "");
+    dropdown.hidden = true;
+    dropdown.innerHTML =
+      '<label class="city-picker__label" for="city-search">Введите город</label>' +
+      '<input class="city-picker__input" id="city-search" type="search" autocomplete="off" placeholder="Например, Казань" data-city-search />' +
+      '<div class="city-picker__status" data-city-status>Начните вводить название города</div>' +
+      '<div class="city-picker__results" data-city-results></div>' +
+      '<button class="city-picker__geo" type="button" data-city-detect>Определить автоматически</button>';
+    cityPicker.appendChild(dropdown);
+
+    var citySearch = qs("[data-city-search]", dropdown);
+    var cityStatus = qs("[data-city-status]", dropdown);
+    var cityResults = qs("[data-city-results]", dropdown);
+    var cityDetect = qs("[data-city-detect]", dropdown);
+    var searchTimer = null;
+
+    function closeCityDropdown() {
+      dropdown.hidden = true;
+      cityBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function openCityDropdown() {
+      dropdown.hidden = false;
+      cityBtn.setAttribute("aria-expanded", "true");
+      if (citySearch) {
+        citySearch.value = cityEl.textContent.trim();
+        citySearch.focus();
+        citySearch.select();
+      }
+    }
+
+    function renderCityResults(items) {
+      cityResults.innerHTML = "";
+      if (!items.length) {
+        cityStatus.textContent = "Город не найден.";
+        return;
+      }
+      cityStatus.textContent = "Выберите город из списка:";
+      items.forEach(function (item) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "city-picker__result";
+        btn.textContent = formatCity(item);
+        btn.addEventListener("click", function () {
+          setCity(item.name);
+          closeCityDropdown();
+        });
+        cityResults.appendChild(btn);
+      });
+    }
+
+    function searchCities(query) {
+      if (query.length < 2) {
+        cityResults.innerHTML = "";
+        cityStatus.textContent = "Введите минимум 2 символа.";
+        return;
+      }
+
+      cityStatus.textContent = "Ищем город...";
+      fetch(
+        "https://geocoding-api.open-meteo.com/v1/search?name=" +
+          encodeURIComponent(query) +
+          "&count=6&language=ru&format=json"
+      )
+        .then(function (res) {
+          if (!res.ok) throw new Error("City search failed");
+          return res.json();
+        })
+        .then(function (data) {
+          renderCityResults(data.results || []);
+        })
+        .catch(function () {
+          cityResults.innerHTML = "";
+          cityStatus.textContent = "Не удалось загрузить города. Попробуйте позже.";
+        });
+    }
+
+    cityBtn.setAttribute("aria-expanded", "false");
+    cityBtn.addEventListener("click", function () {
+      if (dropdown.hidden) openCityDropdown();
+      else closeCityDropdown();
+    });
+
+    citySearch.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        searchCities(citySearch.value.trim());
+      }, 300);
+    });
+
+    cityDetect.addEventListener("click", function () {
+      detectCity(cityStatus);
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!cityPicker.contains(e.target)) closeCityDropdown();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeCityDropdown();
+    });
+
+    if (!savedCity) detectCity();
+  }
+
+  /* Product gallery */
+  qsa("[data-gallery]").forEach(function (gallery) {
+    var mainBtn = qs("[data-gallery-main]", gallery);
+    var mainImg = mainBtn && qs("img", mainBtn);
+    var thumbs = qsa("[data-gallery-thumb]", gallery);
+    if (!mainBtn || !mainImg || !thumbs.length) return;
+
+    var images = thumbs
+      .map(function (thumb) {
+        var img = qs("img", thumb);
+        return img
+          ? {
+              src: img.getAttribute("src"),
+              alt: img.getAttribute("alt") || mainImg.getAttribute("alt") || "",
+            }
+          : null;
+      })
+      .filter(Boolean);
+    var currentIndex = 0;
+    var previousOverflow = "";
+
+    function setActive(index) {
+      currentIndex = (index + images.length) % images.length;
+      mainImg.src = images[currentIndex].src;
+      mainImg.alt = images[currentIndex].alt;
+      mainBtn.setAttribute("data-gallery-index", String(currentIndex));
+      thumbs.forEach(function (thumb, i) {
+        thumb.classList.toggle("is-active", i === currentIndex);
+      });
+      if (gallery._thumbsSwiper && !gallery._thumbsSwiper.destroyed) {
+        gallery._thumbsSwiper.slideTo(currentIndex);
+      }
+      updateLightbox();
+    }
+
+    function ensureLightbox() {
+      var box = qs("[data-gallery-lightbox]");
+      if (box) return box;
+
+      box = document.createElement("div");
+      box.className = "gallery-lightbox";
+      box.setAttribute("data-gallery-lightbox", "");
+      box.setAttribute("role", "dialog");
+      box.setAttribute("aria-modal", "true");
+      box.setAttribute("aria-label", "Просмотр фотографии");
+      box.innerHTML =
+        '<button class="gallery-lightbox__btn gallery-lightbox__close" type="button" data-gallery-close aria-label="Закрыть">&times;</button>' +
+        '<button class="gallery-lightbox__btn gallery-lightbox__prev" type="button" data-gallery-prev aria-label="Предыдущее фото">‹</button>' +
+        '<img class="gallery-lightbox__img" data-gallery-lightbox-img alt="" />' +
+        '<button class="gallery-lightbox__btn gallery-lightbox__next" type="button" data-gallery-next aria-label="Следующее фото">›</button>' +
+        '<div class="gallery-lightbox__counter" data-gallery-counter></div>';
+      document.body.appendChild(box);
+
+      qs("[data-gallery-close]", box).addEventListener("click", closeLightbox);
+      qs("[data-gallery-prev]", box).addEventListener("click", function () {
+        setActive(currentIndex - 1);
+      });
+      qs("[data-gallery-next]", box).addEventListener("click", function () {
+        setActive(currentIndex + 1);
+      });
+      box.addEventListener("click", function (e) {
+        if (e.target === box) closeLightbox();
+      });
+      return box;
+    }
+
+    function updateLightbox() {
+      var box = qs("[data-gallery-lightbox]");
+      if (!box || !box.classList.contains("is-open")) return;
+      var img = qs("[data-gallery-lightbox-img]", box);
+      var counter = qs("[data-gallery-counter]", box);
+      img.src = images[currentIndex].src;
+      img.alt = images[currentIndex].alt;
+      counter.textContent = currentIndex + 1 + " / " + images.length;
+    }
+
+    function openLightbox(index) {
+      setActive(index);
+      var box = ensureLightbox();
+      previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      box.classList.add("is-open");
+      updateLightbox();
+      qs("[data-gallery-close]", box).focus();
+    }
+
+    function closeLightbox() {
+      var box = qs("[data-gallery-lightbox]");
+      if (!box) return;
+      box.classList.remove("is-open");
+      document.body.style.overflow = previousOverflow;
+      mainBtn.focus();
+    }
+
+    var mainPrev = qs("[data-gallery-main-prev]", gallery);
+    var mainNext = qs("[data-gallery-main-next]", gallery);
+
+    thumbs.forEach(function (thumb, index) {
+      thumb.addEventListener("click", function () {
+        setActive(index);
+      });
+      thumb.addEventListener("dblclick", function () {
+        openLightbox(index);
+      });
+    });
+
+    if (mainPrev) {
+      mainPrev.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setActive(currentIndex - 1);
+      });
+    }
+
+    if (mainNext) {
+      mainNext.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setActive(currentIndex + 1);
+      });
+    }
+
+    mainBtn.addEventListener("click", function () {
+      openLightbox(currentIndex);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      var box = qs("[data-gallery-lightbox]");
+      if (!box || !box.classList.contains("is-open")) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") setActive(currentIndex - 1);
+      if (e.key === "ArrowRight") setActive(currentIndex + 1);
+    });
+  });
+
+  function hideReviewMoreButton(btn) {
+    btn.hidden = true;
+    var wrap = btn.closest(".reviews-more");
+    if (wrap) wrap.hidden = true;
+  }
+
+  qsa("[data-client-reviews]").forEach(function (section) {
+    var cards = qsa(".client-review-card[data-review-platform]", section);
+    var filters = qsa("[data-review-filter]", section);
+    var activeFilter = "all";
+
+    function cardMatches(card) {
+      if (activeFilter === "all") return true;
+      return card.getAttribute("data-review-platform") === activeFilter;
+    }
+
+    function applyReviewFilter() {
+      cards.forEach(function (card) {
+        card.classList.toggle("is-filtered-out", !cardMatches(card));
+      });
+    }
+
+    filters.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activeFilter = btn.getAttribute("data-review-filter") || "all";
+        filters.forEach(function (filterBtn) {
+          var isActive = filterBtn === btn;
+          filterBtn.classList.toggle("is-active", isActive);
+          filterBtn.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        applyReviewFilter();
+      });
+    });
+  });
+
+  qsa("[data-review-show-more]").forEach(function (btn) {
+    var section = btn.closest(".reviews-section");
+    if (!section || !qsa(".review-extra.is-hidden", section).length) {
+      hideReviewMoreButton(btn);
+      return;
+    }
+
+    btn.addEventListener("click", function () {
+      var hiddenItems = qsa(".review-extra.is-hidden", section);
+      if (!hiddenItems.length) {
+        hideReviewMoreButton(btn);
+        return;
+      }
+
+      hiddenItems.forEach(function (item) {
+        item.classList.remove("is-hidden");
+      });
+      hideReviewMoreButton(btn);
+    });
+  });
+
+  /* Review screenshots lightbox */
+  var reviewShots = qsa("[data-review-lightbox]");
+  if (reviewShots.length) {
+    var activeReviewShots = reviewShots;
+    var reviewImages = [];
+    var reviewIndex = 0;
+    var reviewPreviousOverflow = "";
+
+    function buildReviewImages(buttons) {
+      return buttons
+        .map(function (btn) {
+        var img = qs("img", btn);
+        return img
+          ? {
+              src: img.getAttribute("src"),
+              alt: img.getAttribute("alt") || "",
+            }
+          : null;
+        })
+        .filter(Boolean);
+    }
+
+    function visibleReviewShots() {
+      return reviewShots.filter(function (btn) {
+        return btn.offsetParent !== null;
+      });
+    }
+
+    function ensureReviewLightbox() {
+      var box = qs("[data-review-lightbox-box]");
+      if (box) return box;
+
+      box = document.createElement("div");
+      box.className = "gallery-lightbox";
+      box.setAttribute("data-review-lightbox-box", "");
+      box.setAttribute("role", "dialog");
+      box.setAttribute("aria-modal", "true");
+      box.setAttribute("aria-label", "Просмотр скриншота отзыва");
+      box.innerHTML =
+        '<button class="gallery-lightbox__btn gallery-lightbox__close" type="button" data-review-close aria-label="Закрыть">&times;</button>' +
+        '<button class="gallery-lightbox__btn gallery-lightbox__prev" type="button" data-review-prev aria-label="Предыдущий скриншот">‹</button>' +
+        '<img class="gallery-lightbox__img" data-review-lightbox-img alt="" />' +
+        '<button class="gallery-lightbox__btn gallery-lightbox__next" type="button" data-review-next aria-label="Следующий скриншот">›</button>' +
+        '<div class="gallery-lightbox__counter" data-review-counter></div>';
+      document.body.appendChild(box);
+
+      qs("[data-review-close]", box).addEventListener("click", closeReviewLightbox);
+      qs("[data-review-prev]", box).addEventListener("click", function () {
+        setReviewImage(reviewIndex - 1);
+      });
+      qs("[data-review-next]", box).addEventListener("click", function () {
+        setReviewImage(reviewIndex + 1);
+      });
+      box.addEventListener("click", function (e) {
+        if (e.target === box) closeReviewLightbox();
+      });
+      return box;
+    }
+
+    function setReviewImage(index) {
+      reviewIndex = (index + reviewImages.length) % reviewImages.length;
+      var box = qs("[data-review-lightbox-box]");
+      if (!box || !box.classList.contains("is-open")) return;
+      var img = qs("[data-review-lightbox-img]", box);
+      var counter = qs("[data-review-counter]", box);
+      img.src = reviewImages[reviewIndex].src;
+      img.alt = reviewImages[reviewIndex].alt;
+      counter.textContent = reviewIndex + 1 + " / " + reviewImages.length;
+    }
+
+    function openReviewLightbox(index, buttons) {
+      activeReviewShots = buttons && buttons.length ? buttons : reviewShots;
+      reviewImages = buildReviewImages(activeReviewShots);
+      reviewIndex = index;
+      var box = ensureReviewLightbox();
+      reviewPreviousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      box.classList.add("is-open");
+      setReviewImage(reviewIndex);
+      qs("[data-review-close]", box).focus();
+    }
+
+    function closeReviewLightbox() {
+      var box = qs("[data-review-lightbox-box]");
+      if (!box) return;
+      box.classList.remove("is-open");
+      document.body.style.overflow = reviewPreviousOverflow;
+      if (activeReviewShots[reviewIndex]) activeReviewShots[reviewIndex].focus();
+    }
+
+    reviewShots.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var visibleShots = visibleReviewShots();
+        openReviewLightbox(visibleShots.indexOf(btn), visibleShots);
+      });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      var box = qs("[data-review-lightbox-box]");
+      if (!box || !box.classList.contains("is-open")) return;
+      if (e.key === "Escape") closeReviewLightbox();
+      if (e.key === "ArrowLeft") setReviewImage(reviewIndex - 1);
+      if (e.key === "ArrowRight") setReviewImage(reviewIndex + 1);
+    });
+  }
+
+  /* Modal + единая форма заявки */
+  var LEAD_SUCCESS_MSG =
+    "Спасибо! Мы получили заявку и скоро свяжемся с вами.";
+
+  var pageCountryByFile = {
+    "korea.html": "Корея",
+    "china.html": "Китай",
+    "europe.html": "Европа",
+    "usa.html": "США",
+  };
+
+  function detectPageCountry() {
+    var path = (window.location.pathname || "").split("/").pop() || "";
+    return pageCountryByFile[path] || "";
+  }
+
+  function resolveAssetUrl(file) {
+    var path = window.location.pathname || "";
+    if (/\/blog\//.test(path) || /\/catalog\//.test(path)) return "../" + file;
+    return file;
+  }
+
+  function ensureHiddenField(form, name, value) {
+    var el = qs('[name="' + name + '"]', form);
+    if (!el) {
+      el = document.createElement("input");
+      el.type = "hidden";
+      el.name = name;
+      form.insertBefore(el, form.firstChild);
+    }
+    if (value !== undefined && value !== null) el.value = value;
+    return el;
+  }
+
+  function ensureOptionalLeadFields(form) {
+    if (qs('[name="budget"]', form)) return;
+    var phoneRow = qs('[name="phone"]', form);
+    var anchor = phoneRow ? phoneRow.closest(".form-row") : null;
+    if (!anchor) return;
+    function addAfter(html) {
+      var tmp = document.createElement("div");
+      tmp.innerHTML = html.trim();
+      var row = tmp.firstChild;
+      anchor.parentNode.insertBefore(row, anchor.nextSibling);
+      anchor = row;
+    }
+    var uid = form.id || "lead";
+    addAfter(
+      '<div class="form-row"><label for="' +
+        uid +
+        '-budget">Бюджет</label><input id="' +
+        uid +
+        '-budget" name="budget" type="text" placeholder="Например, до 3 млн ₽" /></div>'
+    );
+    addAfter(
+      '<div class="form-row"><label for="' +
+        uid +
+        '-city">Город</label><input id="' +
+        uid +
+        '-city" name="city" type="text" autocomplete="address-level2" /></div>'
+    );
+    addAfter(
+      '<div class="form-row"><label for="' +
+        uid +
+        '-need">Что ищете</label><textarea id="' +
+        uid +
+        '-need" name="need" rows="2"></textarea></div>'
+    );
+  }
+
+  function ensureConsultationFields(form) {
+    if (qs('[name="call_time"]', form)) return;
+    var need = qs('[name="need"]', form);
+    var anchor = need ? need.closest(".form-row") : null;
+    var callRow = document.createElement("div");
+    callRow.className = "form-row";
+    callRow.setAttribute("data-form-consultation-only", "");
+    callRow.innerHTML =
+      '<label for="' +
+      form.id +
+      '-call">Удобное время для звонка</label>' +
+      '<input id="' +
+      form.id +
+      '-call" name="call_time" type="text" placeholder="Например, сегодня после 18:00" />';
+    if (anchor && anchor.nextSibling) {
+      form.insertBefore(callRow, anchor.nextSibling);
+    } else {
+      var consent = qs(".form-consent", form);
+      form.insertBefore(callRow, consent || null);
+    }
+    if (!qs('[name="comment"]', form) && !need) {
+      var commentRow = document.createElement("div");
+      commentRow.className = "form-row";
+      commentRow.setAttribute("data-form-consultation-only", "");
+      commentRow.innerHTML =
+        '<label for="' +
+        form.id +
+        '-comment">Комментарий</label>' +
+        '<textarea id="' +
+        form.id +
+        '-comment" name="comment" rows="3"></textarea>';
+      form.insertBefore(commentRow, consent || null);
+    }
+  }
+
+  function ensureRecaptchaPlaceholder(form) {
+    if (qs(".recaptcha-placeholder", form)) return;
+    var consent = qs(".form-consent", form);
+    var box = document.createElement("div");
+    box.className = "recaptcha-placeholder";
+    box.setAttribute("aria-hidden", "true");
+    box.textContent = "Место под reCAPTCHA (подключение на этапе CMS)";
+    if (consent) form.insertBefore(box, consent);
+    else form.appendChild(box);
+  }
+
+  function upgradeLeadForm(form) {
+    if (!form || form.getAttribute("data-lead-upgraded") === "1") return;
+    if (!form.id) form.id = "lead-form-" + Math.random().toString(36).slice(2, 8);
+    ensureHiddenField(form, "lead_source", "");
+    ensureHiddenField(form, "lead_type", "Подбор");
+    if (!qs('[name="lead_segment"]', form)) ensureHiddenField(form, "lead_segment", "");
+    ensureHiddenField(form, "lead_country", "");
+    ensureHiddenField(form, "lead_car", "");
+    var legacyCar = qs('[name="car_title"]', form);
+    if (legacyCar && legacyCar.value) {
+      ensureHiddenField(form, "lead_car", legacyCar.value);
+    }
+    if (!form.getAttribute("data-submit-label")) {
+      var submit = qs('[type="submit"]', form);
+      if (submit) form.setAttribute("data-submit-label", submit.textContent.trim());
+    }
+    if (form.closest("[data-modal-overlay]")) ensureOptionalLeadFields(form);
+    ensureConsultationFields(form);
+    ensureRecaptchaPlaceholder(form);
+    form.setAttribute("data-lead-upgraded", "1");
+  }
+
+  function normalizeLeadSuccess(root) {
+    qsa("[data-form-success]", root || document).forEach(function (el) {
+      el.textContent = LEAD_SUCCESS_MSG;
+    });
+  }
+
+  function setLeadTypeMode(form, type) {
+    var isConsultation = type === "Консультация";
+    form.classList.toggle("is-consultation", isConsultation);
+  }
+
+  function setLeadField(form, name, value) {
+    var el = qs('[name="' + name + '"]', form);
+    if (el) el.value = value || "";
+  }
+
+  function configureLeadForm(form, options) {
+    if (!form) return;
+    upgradeLeadForm(form);
+    options = options || {};
+    if (options.source) setLeadField(form, "lead_source", options.source);
+    if (options.type) setLeadField(form, "lead_type", options.type);
+    if (options.segment !== undefined) setLeadField(form, "lead_segment", options.segment);
+    if (options.country) setLeadField(form, "lead_country", options.country);
+    if (options.car) setLeadField(form, "lead_car", options.car);
+    setLeadTypeMode(form, options.type || "Подбор");
+    var submit = qs('[type="submit"]', form);
+    if (submit) {
+      var label =
+        options.buttonText ||
+        form.getAttribute("data-submit-label") ||
+        "Отправить заявку";
+      submit.textContent = label;
+    }
+  }
+
+  function buildLeadPayload(form) {
+    var fd = new FormData(form);
+    var legacyCar = qs('[name="car_title"]', form);
+    if (legacyCar && legacyCar.value && !fd.get("lead_car")) {
+      fd.set("lead_car", legacyCar.value);
+    }
+    if (form.hasAttribute("data-quiz-final-form") && window.__quizLeadAnswers) {
+      var qa = window.__quizLeadAnswers;
+      fd.set("lead_source", "Квиз");
+      fd.set("lead_type", "Квиз");
+      fd.set("quiz_budget", qa.budget || "");
+      fd.set("quiz_country", qa.country || "");
+      fd.set("quiz_priority", qa.priority || "");
+      fd.set("quiz_credit", qa.credit || "");
+      fd.set("quiz_city", qa.city || "");
+    }
+    return fd;
+  }
+
+  function showLeadSuccess(form) {
+    var container = form.closest(".modal__body") || form.closest(".form-block");
+    var success = container && qs("[data-form-success]", container);
+    form.classList.add("is-hidden");
+    if (success) {
+      success.textContent = LEAD_SUCCESS_MSG;
+      success.classList.add("is-visible");
+    }
+  }
+
+  function bindLeadFormSubmit(form) {
+    if (form.getAttribute("data-lead-bound") === "1") return;
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var phone = qs('[name="phone"]', form);
+      if (phone && phone.value.replace(/\D/g, "").length < 10) {
+        alert("Укажите корректный номер телефона.");
+        return;
+      }
+      var consent = qs('[name="consent"]', form);
+      if (consent && !consent.checked) {
+        alert("Необходимо согласие на обработку персональных данных.");
+        return;
+      }
+      /* Заглушка: CRM / Telegram / Max / email — интеграция в CMS */
+      console.log("Lead:", Object.fromEntries(buildLeadPayload(form)));
+      showLeadSuccess(form);
+    });
+    form.setAttribute("data-lead-bound", "1");
+  }
+
+  function createLeadModalMarkup() {
+    var wrap = document.createElement("div");
+    wrap.className = "modal-overlay";
+    wrap.setAttribute("data-modal-overlay", "");
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.innerHTML =
+      '<div class="modal" role="document">' +
+      '<button type="button" class="modal__close" data-modal-close aria-label="Закрыть">&times;</button>' +
+      '<div class="modal__body">' +
+      '<h2 data-modal-title></h2>' +
+      '<p data-modal-text style="color: var(--text-muted); margin: 0 0 12px"></p>' +
+      '<ul class="modal-benefits" data-modal-benefits></ul>' +
+      '<p class="modal-examples" data-modal-examples></p>' +
+      '<form data-lead-form data-form-main id="lead-modal-form">' +
+      '<input type="hidden" name="lead_source" value="" />' +
+      '<input type="hidden" name="lead_type" value="Подбор" />' +
+      '<input type="hidden" name="lead_segment" value="" />' +
+      '<input type="hidden" name="lead_country" value="" />' +
+      '<input type="hidden" name="lead_car" value="" />' +
+      '<div class="form-row"><label for="lead-modal-name">Имя</label>' +
+      '<input id="lead-modal-name" name="name" type="text" required autocomplete="name" /></div>' +
+      '<div class="form-row"><label for="lead-modal-phone">Телефон</label>' +
+      '<input id="lead-modal-phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="+7 (___) ___-__-__" /></div>' +
+      '<div class="form-row"><label for="lead-modal-budget">Бюджет</label>' +
+      '<input id="lead-modal-budget" name="budget" type="text" placeholder="Например, до 3 млн ₽" /></div>' +
+      '<div class="form-row"><label for="lead-modal-city">Город</label>' +
+      '<input id="lead-modal-city" name="city" type="text" autocomplete="address-level2" /></div>' +
+      '<div class="form-row"><label for="lead-modal-need">Что ищете</label>' +
+      '<textarea id="lead-modal-need" name="need" rows="2"></textarea></div>' +
+      '<div class="form-consent">' +
+      '<input id="lead-modal-consent" name="consent" type="checkbox" required />' +
+      '<label for="lead-modal-consent">Согласен на обработку персональных данных</label></div>' +
+      '<button type="submit" class="btn btn--primary" style="width: 100%" data-submit-label="Отправить заявку">Отправить заявку</button>' +
+      "</form>" +
+      '<div class="form-success" data-form-success role="status"></div>' +
+      "</div></div>";
+    return wrap;
+  }
+
+  function ensureLeadModal() {
+    var existing = qs("[data-modal-overlay]");
+    if (existing) {
+      upgradeLeadForm(qs("form[data-lead-form]", existing));
+      normalizeLeadSuccess(existing);
+      return existing;
+    }
+    var modal = createLeadModalMarkup();
+    document.body.appendChild(modal);
+    upgradeLeadForm(qs("form[data-lead-form]", modal));
+    normalizeLeadSuccess(modal);
+    return modal;
+  }
+
+  var overlay = ensureLeadModal();
+  var modalTitle = qs("[data-modal-title]", overlay);
+  var modalText = qs("[data-modal-text]", overlay);
+  var modalBenefits = qs("[data-modal-benefits]", overlay);
+  var modalExamples = qs("[data-modal-examples]", overlay);
+
+  function modalFormEl() {
+    return overlay ? qs("form[data-lead-form]", overlay) : null;
+  }
+
+  function openModal() {
+    if (!overlay) return;
+    overlay.classList.add("is-open");
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    if (!overlay) return;
+    overlay.classList.remove("is-open");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    var mf = modalFormEl();
+    if (mf) {
+      mf.classList.remove("is-hidden");
+      mf.reset();
+      setLeadTypeMode(mf, "Подбор");
+      var submit = qs('[type="submit"]', mf);
+      if (submit && mf.getAttribute("data-submit-label")) {
+        submit.textContent = mf.getAttribute("data-submit-label");
+      }
+    }
+    var ms = qs("[data-form-success]", overlay);
+    if (ms) ms.classList.remove("is-visible");
+    configureLeadForm(mf, { segment: "", country: "", car: "" });
+  }
+
+  function openLeadFromButton(btn) {
+    var title = btn.getAttribute("data-form-title") || "Оставьте заявку";
+    var type = btn.getAttribute("data-form-type") || "Подбор";
+    var source = btn.getAttribute("data-form-source") || "Сайт";
+    var country =
+      btn.getAttribute("data-form-country") || detectPageCountry() || "";
+    var car = btn.getAttribute("data-form-car") || "";
+    var buttonText =
+      btn.getAttribute("data-form-button-text") ||
+      (btn.textContent ? btn.textContent.trim() : "") ||
+      "Отправить заявку";
+
+    if (modalTitle) modalTitle.textContent = title;
+    if (modalText) modalText.textContent = "";
+    if (modalBenefits) modalBenefits.innerHTML = "";
+    if (modalExamples) modalExamples.textContent = "";
+
+    configureLeadForm(modalFormEl(), {
+      source: source,
+      type: type,
+      segment: "",
+      country: country,
+      car: car,
+      buttonText: buttonText,
+    });
+    openModal();
+  }
+
+  function fillSegmentModal(key) {
+    var d = segmentContent[key];
+    if (!d) return;
+    if (modalTitle) modalTitle.textContent = d.title;
+    if (modalText) modalText.textContent = d.text;
+    if (modalExamples) modalExamples.textContent = "Примеры: " + d.examples;
+    if (modalBenefits) {
+      modalBenefits.innerHTML = "";
+      d.benefits.forEach(function (b) {
+        var li = document.createElement("li");
+        li.textContent = b;
+        modalBenefits.appendChild(li);
+      });
+    }
+    configureLeadForm(modalFormEl(), {
+      source: "Главная / Блок 3.4",
+      type: "Подбор",
+      segment: key,
+      buttonText: "Получить подборку",
+    });
+    openModal();
+  }
+
+  qsa("[data-open-segment]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.getAttribute("data-open-segment");
+      if (key === "quiz") {
+        window.location.href = resolveAssetUrl("quiz.html");
+        return;
+      }
+      fillSegmentModal(key);
+    });
+  });
+
+  qsa("[data-open-form]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openLeadFromButton(btn);
+    });
+  });
+
+  overlay.addEventListener("click", function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  qsa("[data-modal-close]", overlay).forEach(function (b) {
+    b.addEventListener("click", closeModal);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && overlay.classList.contains("is-open")) closeModal();
+  });
+
+  qsa("form[data-lead-form]").forEach(function (form) {
+    upgradeLeadForm(form);
+    var type = qs('[name="lead_type"]', form);
+    setLeadTypeMode(form, type ? type.value : "Подбор");
+    bindLeadFormSubmit(form);
+  });
+  normalizeLeadSuccess(document);
+
+  /* Карточки каталога: скрываем пустые характеристики (для CMS) */
+  qsa(".car-specs__item").forEach(function (item) {
+    var value = qs(".car-specs__value", item) || qs("dd", item);
+    if (value && !value.textContent.trim()) item.hidden = true;
+  });
+
+  /* Каталог на страницах стран */
+  qsa("[data-country-catalog]").forEach(function (section) {
+    var cards = qsa("[data-catalog-car]", section);
+    var filters = qsa("[data-country-filter]", section);
+    var chips = qsa("[data-country-brand]", section);
+    var resetBtn = qs("[data-country-filter-reset]", section);
+    var countEl = qs("[data-country-catalog-count]", section);
+    var pagination = qs("[data-country-pagination]", section);
+    var pageList = qs("[data-country-page-list]", section);
+    var prevBtn = qs("[data-country-page-prev]", section);
+    var nextBtn = qs("[data-country-page-next]", section);
+    var pageSize =
+      parseInt(section.getAttribute("data-country-page-size"), 10) || 3;
+    var currentPage = 1;
+    var state = {};
+
+    function setCount(matched, onPage, totalPages) {
+      if (!countEl) return;
+      if (!matched) {
+        countEl.textContent = "Нет автомобилей по выбранным фильтрам";
+        return;
+      }
+      var text =
+        "Показано " + onPage + " из " + matched + " автомобилей";
+      if (totalPages > 1) {
+        text += " · стр. " + currentPage + " из " + totalPages;
+      }
+      countEl.textContent = text;
+    }
+
+    function cardMatches(card) {
+      return Object.keys(state).every(function (key) {
+        var val = state[key];
+        if (!val) return true;
+        return (card.getAttribute("data-" + key) || "") === val;
+      });
+    }
+
+    function renderPagination(totalPages) {
+      if (!pagination || !pageList) return;
+      if (totalPages <= 1) {
+        pagination.hidden = true;
+        return;
+      }
+      pagination.hidden = false;
+      if (prevBtn) prevBtn.disabled = currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+      pageList.innerHTML = "";
+      for (var p = 1; p <= totalPages; p++) {
+        (function (page) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className =
+            "country-page-btn" + (page === currentPage ? " is-active" : "");
+          btn.textContent = String(page);
+          btn.setAttribute("aria-label", "Страница " + page);
+          if (page === currentPage) btn.setAttribute("aria-current", "page");
+          btn.addEventListener("click", function () {
+            currentPage = page;
+            refreshView();
+          });
+          pageList.appendChild(btn);
+        })(p);
+      }
+    }
+
+    function refreshView(resetPage) {
+      if (resetPage) currentPage = 1;
+      var matched = [];
+      cards.forEach(function (card) {
+        var ok = cardMatches(card);
+        card.classList.toggle("is-filtered-out", !ok);
+        card.classList.remove("is-page-hidden");
+        if (ok) matched.push(card);
+      });
+      var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      var onPage = 0;
+      matched.forEach(function (card, index) {
+        var page = Math.floor(index / pageSize) + 1;
+        var visible = page === currentPage;
+        card.classList.toggle("is-page-hidden", !visible);
+        if (visible) onPage += 1;
+      });
+      setCount(matched.length, onPage, totalPages);
+      renderPagination(totalPages);
+    }
+
+    function applyFilters() {
+      refreshView(true);
+    }
+
+    filters.forEach(function (el) {
+      el.addEventListener("change", function () {
+        var key = el.getAttribute("data-country-filter");
+        if (!key || key === "country") return;
+        state[key] = el.value || "";
+        if (key === "brand") {
+          chips.forEach(function (chip) {
+            chip.classList.toggle(
+              "is-active",
+              chip.getAttribute("data-country-brand") === (el.value || "")
+            );
+          });
+        }
+        applyFilters();
+      });
+    });
+
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var brand = chip.getAttribute("data-country-brand") || "";
+        state.brand = brand;
+        chips.forEach(function (c) {
+          c.classList.toggle("is-active", c === chip);
+        });
+        filters.forEach(function (el) {
+          if (el.getAttribute("data-country-filter") === "brand") {
+            el.value = brand;
+          }
+        });
+        applyFilters();
+      });
+    });
+
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        state = {};
+        filters.forEach(function (el) {
+          var key = el.getAttribute("data-country-filter");
+          if (key && key !== "country") el.value = "";
+        });
+        chips.forEach(function (chip, i) {
+          chip.classList.toggle("is-active", i === 0);
+        });
+        applyFilters();
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (currentPage <= 1) return;
+        currentPage -= 1;
+        refreshView(false);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        currentPage += 1;
+        refreshView(false);
+      });
+    }
+
+    applyFilters();
+  });
+
+  /* Card sliders (documents, team) */
+  if (typeof Swiper !== "undefined") {
+    var cardSliders = [
+      {
+        selector: "[data-documents-swiper]",
+        wrap: ".documents-slider",
+        prev: "[data-documents-prev]",
+        next: "[data-documents-next]",
+        pagination: "[data-documents-pagination]",
+      },
+      {
+        selector: "[data-team-swiper]",
+        wrap: ".team-slider",
+        prev: "[data-team-prev]",
+        next: "[data-team-next]",
+        pagination: "[data-team-pagination]",
+      },
+    ];
+
+    cardSliders.forEach(function (cfg) {
+      qsa(cfg.selector).forEach(function (el) {
+        var wrap = el.closest(cfg.wrap);
+        if (!wrap) return;
+        new Swiper(el, {
+          slidesPerView: 1.08,
+          spaceBetween: 16,
+          watchOverflow: true,
+          pagination: {
+            el: qs(cfg.pagination, wrap),
+            clickable: true,
+          },
+          navigation: {
+            nextEl: qs(cfg.next, wrap),
+            prevEl: qs(cfg.prev, wrap),
+          },
+          breakpoints: {
+            560: { slidesPerView: 2 },
+            900: { slidesPerView: 3 },
+            1200: { slidesPerView: 4 },
+          },
+        });
+      });
+    });
+  }
+
+  qsa("[data-gallery]").forEach(function (gallery) {
+    var swiperEl = qs("[data-product-gallery-swiper]", gallery);
+    if (!swiperEl) return;
+    var wrap = swiperEl.closest(".product-gallery-slider");
+    if (!wrap) return;
+
+    var prevBtn = qs("[data-product-gallery-prev]", wrap);
+    var nextBtn = qs("[data-product-gallery-next]", wrap);
+    var scrollEl = qs(".swiper-wrapper", swiperEl) || swiperEl;
+
+    function bindScrollFallback() {
+      if (!prevBtn || !nextBtn) return;
+      prevBtn.addEventListener("click", function () {
+        scrollEl.scrollBy({ left: -scrollEl.clientWidth * 0.8, behavior: "smooth" });
+      });
+      nextBtn.addEventListener("click", function () {
+        scrollEl.scrollBy({ left: scrollEl.clientWidth * 0.8, behavior: "smooth" });
+      });
+    }
+
+    if (typeof Swiper === "undefined") {
+      bindScrollFallback();
+      return;
+    }
+
+    try {
+      gallery._thumbsSwiper = new Swiper(swiperEl, {
+        slidesPerView: 3,
+        spaceBetween: 8,
+        watchOverflow: true,
+        observer: true,
+        observeParents: true,
+        resizeObserver: true,
+        navigation: {
+          nextEl: nextBtn,
+          prevEl: prevBtn,
+        },
+        breakpoints: {
+          480: { slidesPerView: 4 },
+          640: { slidesPerView: 5 },
+          900: { slidesPerView: 6 },
+        },
+        on: {
+          init: function (swiper) {
+            swiper.update();
+          },
+        },
+      });
+
+      window.addEventListener("load", function () {
+        if (gallery._thumbsSwiper && !gallery._thumbsSwiper.destroyed) {
+          gallery._thumbsSwiper.update();
+        }
+      });
+    } catch (err) {
+      gallery._thumbsSwiper = null;
+      bindScrollFallback();
+    }
+  });
+
+  /* Catalog brand links — заглушка для статики */
+  qsa("[data-brand-filter]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      var brand = el.getAttribute("data-brand-filter");
+      var catalogUrl = "catalog.html";
+      if (/\/catalog\//.test(window.location.pathname || "")) {
+        catalogUrl = "../catalog.html";
+      }
+      window.location.href =
+        catalogUrl + "?brand=" + encodeURIComponent(brand);
+    });
+  });
+})();
