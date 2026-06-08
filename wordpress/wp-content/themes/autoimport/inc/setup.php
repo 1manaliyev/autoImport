@@ -52,10 +52,26 @@ function autoimport_country_badge_class( string $country ): string {
 }
 
 /**
+ * Map car type to tag CSS class.
+ */
+function autoimport_car_type_tag_class( string $type ): string {
+	$map = array(
+		'Семейный'      => 'tag--family',
+		'Премиум'       => 'tag--premium',
+		'Экономия'      => 'tag--economy',
+		'Технологичный' => 'tag--tech',
+		'Мощный'        => 'tag--power',
+	);
+	return $map[ trim( $type ) ] ?? '';
+}
+
+/**
  * Enqueue styles and scripts.
  */
 function autoimport_enqueue_assets(): void {
-	$theme_version = wp_get_theme()->get( 'Version' );
+	$theme_version     = wp_get_theme()->get( 'Version' );
+	$main_css_path     = get_template_directory() . '/css/main.css';
+	$main_css_version  = file_exists( $main_css_path ) ? (string) filemtime( $main_css_path ) : $theme_version;
 
 	wp_enqueue_style(
 		'autoimport-fonts',
@@ -68,7 +84,7 @@ function autoimport_enqueue_assets(): void {
 		'autoimport-main',
 		autoimport_asset_uri( 'css/main.css' ),
 		array( 'autoimport-fonts' ),
-		$theme_version
+		$main_css_version
 	);
 
 	$needs_swiper = is_singular( 'car' ) || autoimport_page_needs_swiper();

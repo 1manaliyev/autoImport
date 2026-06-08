@@ -1276,6 +1276,31 @@ h3 {
   font-weight: 600;
 }
 
+.tag.tag--family {
+  background: #d9f0ec;
+  color: #1a6b5f;
+}
+
+.tag.tag--premium {
+  background: #ede4f7;
+  color: #5b3f8f;
+}
+
+.tag.tag--economy {
+  background: #ddf3e4;
+  color: #146b3a;
+}
+
+.tag.tag--tech {
+  background: #dde6fb;
+  color: #2a47a8;
+}
+
+.tag.tag--power {
+  background: #fde2df;
+  color: #b52d20;
+}
+
 .car-card__actions {
   display: flex;
   flex-direction: column;
@@ -1379,7 +1404,8 @@ h3 {
   accent-color: var(--accent);
 }
 
-.form-main .btn {
+.form-main .btn,
+.form-block form[data-lead-form] .btn {
   width: 100%;
   min-height: 52px;
 }
@@ -1768,6 +1794,7 @@ h3 {
 
 .form-success.is-visible {
   display: block;
+  margin-top: 16px;
 }
 
 .form-main.is-hidden {
