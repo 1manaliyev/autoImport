@@ -7,9 +7,15 @@
 
 get_header();
 
-$slug        = get_post_field( 'post_name', get_the_ID() );
-$static_slug = $slug;
-$parent_id   = wp_get_post_parent_id( get_the_ID() );
+$queried_id    = (int) get_queried_object_id();
+$posts_page_id = (int) get_option( 'page_for_posts' );
+$slug          = $queried_id ? get_post_field( 'post_name', $queried_id ) : '';
+$static_slug   = $slug;
+$parent_id     = $queried_id ? wp_get_post_parent_id( $queried_id ) : 0;
+
+if ( $posts_page_id && $queried_id === $posts_page_id ) {
+	$static_slug = 'blog';
+}
 if ( $parent_id ) {
 	$parent = get_post( $parent_id );
 	if ( $parent && 'cars' === $parent->post_name && 'power-up-to-160' === $slug ) {

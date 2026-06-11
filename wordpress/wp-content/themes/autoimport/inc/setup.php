@@ -66,12 +66,221 @@ function autoimport_car_type_tag_class( string $type ): string {
 }
 
 /**
+ * Map turnkey price to catalog filter bucket.
+ */
+function autoimport_get_price_filter_bucket( $price ): string {
+	$price = (int) $price;
+
+	if ( $price <= 0 ) {
+		return '';
+	}
+
+	if ( $price < 3000000 ) {
+		return 'to-3';
+	}
+
+	if ( $price < 5000000 ) {
+		return '3-5';
+	}
+
+	return '5+';
+}
+
+/**
+ * Map production year to catalog filter bucket.
+ */
+function autoimport_get_year_filter_bucket( $year ): string {
+	$year = (int) $year;
+
+	if ( $year <= 0 ) {
+		return '';
+	}
+
+	$current_year = (int) wp_date( 'Y' );
+
+	if ( $year < 2020 ) {
+		return 'before-2020';
+	}
+
+	if ( $year < $current_year ) {
+		return '2020-' . ( $current_year - 1 );
+	}
+
+	return (string) $current_year;
+}
+
+/**
+ * Map mileage to catalog filter bucket.
+ */
+function autoimport_get_mileage_filter_bucket( $mileage ): string {
+	if ( $mileage === null || $mileage === '' ) {
+		return '';
+	}
+
+	$mileage = (int) $mileage;
+
+	if ( $mileage < 0 ) {
+		return '';
+	}
+
+	if ( $mileage <= 30000 ) {
+		return 'to-30';
+	}
+
+	if ( $mileage <= 80000 ) {
+		return 'to-80';
+	}
+
+	return 'from-80';
+}
+
+/**
+ * Normalize drive type to catalog filter value.
+ */
+function autoimport_get_drive_filter_bucket( $drive ): string {
+	$drive = mb_strtolower( trim( (string) $drive ) );
+
+	if ( $drive === '' ) {
+		return '';
+	}
+
+	if ( preg_match( '/задн|rwd/u', $drive ) ) {
+		return 'Задний';
+	}
+
+	if ( preg_match( '/полн|4wd|htrac|awd/u', $drive ) ) {
+		return 'Полный';
+	}
+
+	if ( preg_match( '/перед|fwd/u', $drive ) ) {
+		return 'Передний';
+	}
+
+	return '';
+}
+
+/**
+ * Normalize fuel type to catalog filter value.
+ */
+function autoimport_get_fuel_filter_bucket( $fuel ): string {
+	$fuel = mb_strtolower( trim( (string) $fuel ) );
+
+	if ( $fuel === '' ) {
+		return '';
+	}
+
+	if ( preg_match( '/гибрид|hybrid|phev|mhev/u', $fuel ) ) {
+		return 'Гибрид';
+	}
+
+	if ( preg_match( '/электр|electric|\bev\b/u', $fuel ) ) {
+		return 'Электро';
+	}
+
+	if ( preg_match( '/дизел|diesel/u', $fuel ) ) {
+		return 'Дизель';
+	}
+
+	if ( preg_match( '/газ|lpg|cng|пропан|метан/u', $fuel ) ) {
+		return 'Газ';
+	}
+
+	if ( preg_match( '/бензин|petrol|gasoline/u', $fuel ) ) {
+		return 'Бензин';
+	}
+
+	return '';
+}
+
+/**
+ * Map engine power to catalog filter bucket.
+ */
+function autoimport_get_power_filter_bucket( $power ): string {
+	$power = (int) $power;
+
+	if ( $power <= 0 ) {
+		return '';
+	}
+
+	if ( $power <= 160 ) {
+		return '160-';
+	}
+
+	if ( $power <= 250 ) {
+		return '160-250';
+	}
+
+	return '250+';
+}
+
+/**
+ * Map engine volume to catalog filter bucket.
+ */
+function autoimport_get_volume_filter_bucket( $volume ): string {
+	$volume = (float) str_replace( ',', '.', trim( (string) $volume ) );
+
+	if ( $volume <= 0 ) {
+		return '';
+	}
+
+	if ( $volume <= 2.0 ) {
+		return '2-';
+	}
+
+	return '2+';
+}
+
+/**
+ * Normalize ACF value for client-side catalog sorting.
+ */
+function autoimport_get_catalog_sort_int( $value ): string {
+	$number = (int) preg_replace( '/[^\d]/', '', (string) $value );
+
+	return $number > 0 ? (string) $number : '';
+}
+
+/**
+ * Normalize mileage for client-side catalog sorting (0 is valid).
+ */
+function autoimport_get_catalog_sort_mileage( $value ): string {
+	if ( trim( (string) $value ) === '' ) {
+		return '';
+	}
+
+	return (string) max( 0, (int) preg_replace( '/[^\d]/', '', (string) $value ) );
+}
+
+/**
+ * Normalize engine volume for client-side catalog sorting.
+ */
+function autoimport_get_catalog_sort_volume( $value ): string {
+	$normalized = str_replace( ',', '.', preg_replace( '/[^\d.,]/', '', (string) $value ) );
+
+	if ( $normalized === '' ) {
+		return '';
+	}
+
+	$number = (float) $normalized;
+
+	return $number > 0 ? (string) $number : '';
+}
+
+/**
+ * Cars per page in catalog grids.
+ */
+function autoimport_catalog_page_size(): int {
+	return 9;
+}
+
+/**
  * Enqueue styles and scripts.
  */
 function autoimport_enqueue_assets(): void {
 	$theme_version     = wp_get_theme()->get( 'Version' );
 	$main_css_path     = get_template_directory() . '/css/main.css';
+	$main_js_path      = get_template_directory() . '/js/main.js';
 	$main_css_version  = file_exists( $main_css_path ) ? (string) filemtime( $main_css_path ) : $theme_version;
+	$main_js_version   = file_exists( $main_js_path ) ? (string) filemtime( $main_js_path ) : $theme_version;
 
 	wp_enqueue_style(
 		'autoimport-fonts',
@@ -108,7 +317,7 @@ function autoimport_enqueue_assets(): void {
 		'autoimport-main',
 		autoimport_asset_uri( 'js/main.js' ),
 		array(),
-		$theme_version,
+		$main_js_version,
 		true
 	);
 

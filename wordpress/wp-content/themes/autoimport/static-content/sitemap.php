@@ -103,28 +103,21 @@ $autoimport_page_meta = array( 'title' => 'Карта сайта — AutoImport'
           </ul>
 
           <h2>Статьи блога</h2>
-          <ul class="sitemap-list">
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-kitaya' ) ); ?>">Как купить автомобиль из Китая</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-ssha' ) ); ?>">Как купить автомобиль из США</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-evropy' ) ); ?>">Как купить автомобиль из Европы</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-korei' ) ); ?>">Как купить автомобиль из Кореи</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/semeynyy-krossover' ) ); ?>">Как не ошибиться при выборе семейного кроссовера</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/luchshie-avto-budget' ) ); ?>">Лучшие авто до 3 / 4 / 5 млн</a>
-            </li>
-            <li>
-              <a href="<?php echo esc_url( home_url( '/blog/kitayskie-gibridy' ) ); ?>">Что важно знать про китайские гибриды</a>
-            </li>
-          </ul>
+          <?php
+          $sitemap_blog_query = autoimport_get_blog_posts_query( -1 );
+          if ( $sitemap_blog_query->have_posts() ) :
+            ?>
+            <ul class="sitemap-list">
+              <?php
+              while ( $sitemap_blog_query->have_posts() ) :
+                $sitemap_blog_query->the_post();
+                ?>
+                <li>
+                  <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                </li>
+              <?php endwhile; ?>
+              <?php wp_reset_postdata(); ?>
+            </ul>
+          <?php endif; ?>
         </div>
       </section>

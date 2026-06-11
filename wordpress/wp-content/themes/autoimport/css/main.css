@@ -1544,6 +1544,107 @@ h3 {
   margin-top: 12px;
 }
 
+.catalog-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.catalog-sort {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+}
+
+.catalog-sort__label {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.catalog-sort__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.catalog-sort__trigger:hover,
+.catalog-sort__trigger.is-open {
+  color: var(--accent-hover);
+}
+
+.catalog-sort__chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.catalog-sort__trigger.is-open .catalog-sort__chevron {
+  transform: rotate(180deg);
+}
+
+.catalog-sort__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+}
+
+.catalog-sort__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 260px;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(43, 47, 51, 0.14);
+}
+
+.catalog-sort__menu[hidden] {
+  display: none;
+}
+
+.catalog-sort__option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.catalog-sort__option:hover,
+.catalog-sort__option.is-active {
+  background: rgba(200, 169, 106, 0.12);
+  color: var(--accent-hover);
+}
+
 .country-catalog__note {
   margin: 0;
   font-size: 0.875rem;
@@ -1573,6 +1674,10 @@ h3 {
 }
 
 .country-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   min-width: 40px;
   height: 40px;
   padding: 0 12px;
@@ -1582,6 +1687,7 @@ h3 {
   color: var(--text);
   font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
@@ -1935,6 +2041,39 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
   font-size: 0.88rem;
 }
 
+.blog-card__title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.blog-card__excerpt {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.blog-index__count {
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.blog-index__grid {
+  margin-top: 0;
+}
+
+a.country-page-btn {
+  text-decoration: none;
+}
+
+span.country-page-btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .related-blog__actions {
   display: flex;
   justify-content: center;
@@ -1999,21 +2138,19 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
   padding-left: 1.25rem;
 }
 
-.article-cover,
-.article-figure {
-  margin: 0 0 28px;
+.article-content figure {
+  margin: 28px 0;
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   background: var(--bg-page);
 }
 
-.article-figure {
-  margin: 28px 0;
+.article-content > figure:first-child {
+  margin-top: 0;
 }
 
-.article-cover img,
-.article-figure img {
+.article-content figure img {
   display: block;
   width: 100%;
   height: auto;
@@ -2021,8 +2158,7 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
   object-fit: cover;
 }
 
-.article-cover figcaption,
-.article-figure figcaption {
+.article-content figure figcaption {
   padding: 10px 14px;
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -2030,23 +2166,60 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
   border-top: 1px solid var(--border);
 }
 
-.article-lead {
-  color: var(--text) !important;
+.article-content > figure:first-child + p {
+  color: var(--text);
   font-size: 1.08rem;
 }
 
-.article-callout {
+.article-content blockquote {
   margin: 22px 0;
   padding: 18px 20px;
   border: 1px solid rgba(200, 169, 106, 0.28);
   border-radius: var(--radius-sm);
   background: rgba(200, 169, 106, 0.08);
-  color: var(--text) !important;
+}
+
+.article-content blockquote p {
+  margin: 0;
+  color: var(--text);
   font-weight: 700;
 }
 
-.article-table {
+.article-content .wp-block-table,
+.article-content figure:has(table) {
   margin: 18px 0 24px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+
+.article-content figure:has(table) {
+  padding: 0;
+}
+
+.article-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.article-content th,
+.article-content td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.article-content th {
+  background: var(--bg-page);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.article-content tr:last-child td {
+  border-bottom: none;
 }
 
 .article-cta {
@@ -3370,10 +3543,11 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
   transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
 
-.brands-scroll a:hover {
+.brands-scroll a:hover,
+.brands-scroll a.is-active {
   border-color: var(--accent);
   color: var(--accent-hover);
-  background: rgba(200, 169, 106, 0.08);
+  background: rgba(200, 169, 106, 0.1);
 }
 
 .filters-grid {
@@ -3393,11 +3567,17 @@ form[data-lead-form]:not(.is-consultation) [data-form-consultation-only] {
 
 .filters-grid select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font: inherit;
-  background: #fff;
+  color: inherit;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  appearance: none;
 }
 
 /* FAQ аккордеон */

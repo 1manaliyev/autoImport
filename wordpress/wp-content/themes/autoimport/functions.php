@@ -14,6 +14,8 @@ define( 'AUTOIMPORT_VERSION', '1.0.0' );
 require get_template_directory() . '/inc/setup.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/pages.php';
+require get_template_directory() . '/inc/blog.php';
+require get_template_directory() . '/inc/acf-catalog.php';
 
 /**
  * Blog permalink structure: /blog/%postname%/

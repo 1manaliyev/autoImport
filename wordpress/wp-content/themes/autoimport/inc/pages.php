@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function autoimport_get_page_map(): array {
 	return array(
+		'catalog'            => 'Каталог автомобилей',
 		'korea'              => 'Авто из Кореи',
 		'china'              => 'Авто из Китая',
 		'europe'             => 'Авто из Европы',
@@ -50,6 +51,26 @@ function autoimport_get_blog_post_map(): array {
 		'semeynyy-krossover'     => 'Как не ошибиться при выборе семейного кроссовера',
 		'luchshie-avto-budget'   => 'Лучшие авто до 3 / 4 / 5 млн',
 		'kitayskie-gibridy'      => 'Что важно знать про китайские гибриды',
+	);
+}
+
+/**
+ * Query published blog posts for related sections.
+ *
+ * @param int   $limit       Posts to fetch.
+ * @param int[] $exclude_ids Post IDs to skip.
+ */
+function autoimport_get_blog_posts_query( int $limit = 7, array $exclude_ids = array() ): WP_Query {
+	return new WP_Query(
+		array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'posts_per_page'      => $limit,
+			'orderby'             => 'date',
+			'order'               => 'DESC',
+			'post__not_in'        => array_map( 'intval', $exclude_ids ),
+			'ignore_sticky_posts' => true,
+		)
 	);
 }
 
@@ -149,6 +170,11 @@ function autoimport_create_pages(): void {
 		);
 	}
 
+	if ( function_exists( 'autoimport_sync_blog_posts_content' ) ) {
+		autoimport_sync_blog_posts_content();
+		update_option( 'autoimport_blog_sync_version', AUTOIMPORT_BLOG_SYNC_VERSION );
+	}
+
 	$demo_car = get_page_by_path( 'hyundai-tucson-2022', OBJECT, 'car' );
 	if ( ! $demo_car ) {
 		$car_id = wp_insert_post(
@@ -163,8 +189,43 @@ function autoimport_create_pages(): void {
 		if ( $car_id && ! is_wp_error( $car_id ) ) {
 			wp_set_object_terms( $car_id, array( 'Корея' ), 'car_country' );
 			wp_set_object_terms( $car_id, array( 'Hyundai' ), 'car_brand' );
-			wp_set_object_terms( $car_id, array( 'Кроссоверы' ), 'car_category' );
+			wp_set_object_terms( $car_id, array( 'Tucson' ), 'car_model' );
+			wp_set_object_terms( $car_id, array( 'Кроссовер' ), 'car_body' );
 		}
 	}
 }
 add_action( 'after_switch_theme', 'autoimport_create_pages' );
+
+/**
+ * Ensure catalog listing page exists (ACF target for /catalog/).
+ */
+function autoimport_ensure_catalog_page(): void {
+	if ( get_page_by_path( 'catalog' ) ) {
+		return;
+	}
+
+	wp_insert_post(
+		array(
+			'post_title'   => 'Каталог автомобилей',
+			'post_name'    => 'catalog',
+			'post_status'  => 'publish',
+			'post_type'    => 'page',
+			'post_content' => '',
+		)
+	);
+}
+
+/**
+ * Switch catalog from CPT archive to a regular page.
+ */
+function autoimport_maybe_setup_catalog_page(): void {
+	autoimport_ensure_catalog_page();
+
+	if ( get_option( 'autoimport_catalog_as_page' ) ) {
+		return;
+	}
+
+	update_option( 'autoimport_catalog_as_page', 1 );
+	flush_rewrite_rules( false );
+}
+add_action( 'admin_init', 'autoimport_maybe_setup_catalog_page' );

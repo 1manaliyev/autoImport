@@ -1,310 +1,300 @@
 <?php
 /** Static markup from catalog.html */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-$autoimport_page_meta = array( 'title' => 'Каталог автомобилей из Кореи, Китая, Европы и США', 'description' => 'Фильтры по стране, марке, цене и характеристикам. Реальные примеры в каталоге.', 'extra_head' => '', 'has_quiz' => false, 'has_swiper' => false );
+
+$catalog_defaults = array(
+	'seo_title'            => 'Каталог автомобилей из Кореи, Китая, Европы и США',
+	'seo_description'      => 'Фильтры по стране, марке, цене и характеристикам. Реальные примеры в каталоге.',
+	'hero_title'           => 'Каталог автомобилей из Кореи, Китая, Европы и США',
+	'hero_subtitle'        => 'Пустые значения в карточках на сайте не выводятся — при интеграции с CMS поля скрываются, если нет данных.',
+	'banner_badge'         => 'Подборка в каталоге',
+	'banner_title'         => 'Автомобили до 160 л.с. с льготным утильсбором',
+	'banner_text'          => 'С 1 декабря 2025 года для автомобилей с мощностью до 160 лошадиных сил сохраняется льготный утильсбор. Это делает их ввоз в Россию максимально выгодным.',
+	'banner_button_text'   => 'Смотреть подборку',
+	'banner_button_url'    => home_url( '/cars/power-up-to-160' ),
+	'cta_title'            => 'Не нашли подходящий вариант?',
+	'cta_text'             => 'Подберём автомобиль под ваш запрос вручную. Часто нужный вариант не попадает в открытую подборку, но его можно найти под заказ.',
+	'cta_button_text'      => 'Получить варианты',
+);
+
+$catalog_seo_title       = autoimport_get_catalog_field( 'catalog_seo_title', $catalog_defaults['seo_title'] );
+$catalog_seo_description = autoimport_get_catalog_field( 'catalog_seo_description', $catalog_defaults['seo_description'] );
+$catalog_hero_title      = autoimport_get_catalog_field( 'catalog_hero_title', $catalog_defaults['hero_title'] );
+$catalog_hero_subtitle   = autoimport_get_catalog_field( 'catalog_hero_subtitle', $catalog_defaults['hero_subtitle'] );
+$catalog_banner_badge    = autoimport_get_catalog_field( 'catalog_banner_badge', $catalog_defaults['banner_badge'] );
+$catalog_banner_title    = autoimport_get_catalog_field( 'catalog_banner_title', $catalog_defaults['banner_title'] );
+$catalog_banner_text     = autoimport_get_catalog_field( 'catalog_banner_text', $catalog_defaults['banner_text'] );
+$catalog_banner_btn_text = autoimport_get_catalog_field( 'catalog_banner_button_text', $catalog_defaults['banner_button_text'] );
+$catalog_banner_btn_url  = autoimport_get_catalog_field( 'catalog_banner_button_url', $catalog_defaults['banner_button_url'] );
+$catalog_cta_title       = autoimport_get_catalog_field( 'catalog_cta_title', $catalog_defaults['cta_title'] );
+$catalog_cta_text        = autoimport_get_catalog_field( 'catalog_cta_text', $catalog_defaults['cta_text'] );
+$catalog_cta_btn_text    = autoimport_get_catalog_field( 'catalog_cta_button_text', $catalog_defaults['cta_button_text'] );
+
+$autoimport_page_meta = array(
+	'title'       => $catalog_seo_title,
+	'description' => $catalog_seo_description,
+	'extra_head'  => '',
+	'has_quiz'    => false,
+	'has_swiper'  => false,
+);
+
+$catalog_countries = get_terms(
+	array(
+		'taxonomy'   => 'car_country',
+		'hide_empty' => true,
+	)
+);
+$catalog_brands = get_terms(
+	array(
+		'taxonomy'   => 'car_brand',
+		'hide_empty' => true,
+	)
+);
+$catalog_models = get_terms(
+	array(
+		'taxonomy'   => 'car_model',
+		'hide_empty' => true,
+	)
+);
+$catalog_body_types = get_terms(
+	array(
+		'taxonomy'   => 'car_body',
+		'hide_empty' => true,
+	)
+);
+
+$catalog_current_year   = (int) wp_date( 'Y' );
+$catalog_recent_year_to = $catalog_current_year - 1;
+$title = get_field('заголовок');
+$text = get_field('текст');
+$banner = get_field('баннер');
 ?>
 <div class="page-hero">
         <div class="container">
-          <h1>Каталог автомобилей из Кореи, Китая, Европы и США</h1>
-          <p class="subtitle mb-0">
-            Пустые значения в карточках на сайте не выводятся — при интеграции с CMS поля скрываются, если нет данных.
-          </p>
+          <h1><?php echo esc_html( $title ); ?></h1>
+          <?php if ( $text ) : ?>
+            <p class="subtitle mb-0"><?php echo esc_html( $text ); ?></p>
+          <?php endif; ?>
         </div>
       </div>
-
-      <section class="section section--tight-top banner-160-section">
-        <div class="container">
-          <div class="banner-160">
-            <div>
-              <span class="banner-160__badge">Подборка в каталоге</span>
-              <h3>Автомобили до 160 л.с. с льготным утильсбором</h3>
-              <p>
-                С 1 декабря 2025 года для автомобилей с мощностью до 160 лошадиных сил сохраняется льготный утильсбор. Это делает их ввоз в Россию максимально выгодным.
-              </p>
+      
+      <?php if ($banner['надзаголовок'] && $banner['заголовок'] && $banner['текст'] && $banner['кнопка']['текст'] && $banner['кнопка']['ссылка']) : ?>
+        <section class="section section--tight-top banner-160-section">
+          <div class="container">
+            <div class="banner-160">
+              <div>
+                <?php if ( $banner['надзаголовок'] ) : ?>
+                  <span class="banner-160__badge"><?php echo esc_html( $banner['надзаголовок'] ); ?></span>
+                <?php endif; ?>
+                <?php if ( $banner['заголовок'] ) : ?>
+                  <h3><?php echo esc_html( $banner['заголовок'] ); ?></h3>
+                <?php endif; ?>
+                <?php if ( $banner['текст'] ) : ?>
+                  <p><?php echo esc_html( $banner['текст'] ); ?></p>
+                <?php endif; ?>
+              </div>
+              <?php if ( $banner['кнопка']['текст'] && $banner['кнопка']['ссылка'] ) : ?>
+                <a class="btn btn--primary" href="<?=esc_html($banner['кнопка']['ссылка']);?>"><?=esc_html($banner['кнопка']['текст']);?></a>
+              <?php endif; ?>
             </div>
-            <a class="btn btn--primary" href="<?php echo esc_url( home_url( '/cars/power-up-to-160' ) ); ?>">Смотреть подборку</a>
           </div>
-        </div>
-      </section>
+        </section>
+      <?php endif; ?>
 
-      <section class="section section--tight-top">
+      <section class="section section--tight-top" data-catalog data-catalog-page-size="<?php echo esc_attr( (string) autoimport_catalog_page_size() ); ?>">
         <div class="container">
           <p class="eyebrow">Фильтр по марке</p>
           <div class="brands-scroll-wrap" aria-label="Популярные марки">
             <div class="brands-scroll">
-              <a href="#" data-brand-filter="Kia">Kia</a>
-              <a href="#" data-brand-filter="Hyundai">Hyundai</a>
-              <a href="#" data-brand-filter="Toyota">Toyota</a>
-              <a href="#" data-brand-filter="BMW">BMW</a>
-              <a href="#" data-brand-filter="Mercedes">Mercedes</a>
-              <a href="#" data-brand-filter="Volkswagen">Volkswagen</a>
-              <a href="#" data-brand-filter="Audi">Audi</a>
-              <a href="#" data-brand-filter="Lexus">Lexus</a>
-              <a href="#" data-brand-filter="Honda">Honda</a>
-              <a href="#" data-brand-filter="Nissan">Nissan</a>
-              <a href="#" data-brand-filter="Mazda">Mazda</a>
-              <a href="#" data-brand-filter="Skoda">Skoda</a>
-              <a href="#" data-brand-filter="Ford">Ford</a>
-              <a href="#" data-brand-filter="Geely">Geely</a>
-              <a href="#" data-brand-filter="Changan">Changan</a>
-              <a href="#" data-brand-filter="Li Auto">Li Auto</a>
-              <a href="#" data-brand-filter="Zeekr">Zeekr</a>
-              <a href="#" data-brand-filter="Haval">Haval</a>
+              <a href="#" class="is-active" data-brand-filter="">Все марки</a>
+              <?php if ( ! is_wp_error( $catalog_brands ) ) : ?>
+                <?php foreach ( $catalog_brands as $brand_term ) : ?>
+                  <a href="#" data-brand-filter="<?php echo esc_attr( $brand_term->name ); ?>"><?php echo esc_html( $brand_term->name ); ?></a>
+                <?php endforeach; ?>
+              <?php endif; ?>
             </div>
           </div>
 
           <div class="filters-grid" aria-label="Фильтры каталога">
             <div>
               <label for="f-country">Страна</label>
-              <select id="f-country">
+              <select id="f-country" data-catalog-filter="country">
                 <option value="">Любая</option>
-                <option>Корея</option>
-                <option>Китай</option>
-                <option>Европа</option>
-                <option>США</option>
+                <?php if ( ! is_wp_error( $catalog_countries ) ) : ?>
+                  <?php foreach ( $catalog_countries as $country_term ) : ?>
+                    <option value="<?php echo esc_attr( $country_term->name ); ?>"><?php echo esc_html( $country_term->name ); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
             <div>
               <label for="f-brand">Марка</label>
-              <select id="f-brand">
+              <select id="f-brand" data-catalog-filter="brand">
                 <option value="">Любая</option>
-                <option>Hyundai</option>
-                <option>Kia</option>
-                <option>Geely</option>
-                <option>BMW</option>
+                <?php if ( ! is_wp_error( $catalog_brands ) ) : ?>
+                  <?php foreach ( $catalog_brands as $brand_term ) : ?>
+                    <option value="<?php echo esc_attr( $brand_term->name ); ?>"><?php echo esc_html( $brand_term->name ); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
             <div>
               <label for="f-model">Модель</label>
-              <select id="f-model">
+              <select id="f-model" data-catalog-filter="model">
                 <option value="">Любая</option>
-                <option>Tucson</option>
-                <option>Monjaro</option>
-                <option>X3</option>
+                <?php if ( ! is_wp_error( $catalog_models ) ) : ?>
+                  <?php foreach ( $catalog_models as $model_term ) : ?>
+                    <option value="<?php echo esc_attr( $model_term->name ); ?>"><?php echo esc_html( $model_term->name ); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
             <div>
               <label for="f-price">Цена, ₽</label>
-              <select id="f-price">
+              <select id="f-price" data-catalog-filter="price">
                 <option value="">Любая</option>
-                <option>до 3 млн</option>
-                <option>3–5 млн</option>
-                <option>от 5 млн</option>
+                <option value="to-3">до 3 млн</option>
+                <option value="3-5">3–5 млн</option>
+                <option value="5+">от 5 млн</option>
               </select>
             </div>
             <div>
               <label for="f-year">Год</label>
-              <select id="f-year">
+              <select id="f-year" data-catalog-filter="year">
                 <option value="">Любой</option>
-                <option>2023–2025</option>
-                <option>2020–2022</option>
+                <option value="before-2020">до 2020 года</option>
+                <?php if ( $catalog_recent_year_to >= 2020 ) : ?>
+                  <option value="<?php echo esc_attr( '2020-' . $catalog_recent_year_to ); ?>">2020–<?php echo esc_html( (string) $catalog_recent_year_to ); ?></option>
+                <?php endif; ?>
+                <option value="<?php echo esc_attr( (string) $catalog_current_year ); ?>"><?php echo esc_html( (string) $catalog_current_year ); ?></option>
               </select>
             </div>
             <div>
               <label for="f-mileage">Пробег</label>
-              <select id="f-mileage">
+              <select id="f-mileage" data-catalog-filter="mileage">
                 <option value="">Любой</option>
-                <option>до 30 000 км</option>
-                <option>до 80 000 км</option>
+                <option value="to-30">до 30 000 км</option>
+                <option value="to-80">до 80 000 км</option>
+                <option value="from-80">от 80 000 км</option>
               </select>
             </div>
             <div>
               <label for="f-body">Кузов</label>
-              <select id="f-body">
+              <select id="f-body" data-catalog-filter="body">
                 <option value="">Любой</option>
-                <option>Кроссовер</option>
-                <option>Седан</option>
+                <?php if ( ! is_wp_error( $catalog_body_types ) ) : ?>
+                  <?php foreach ( $catalog_body_types as $body_term ) : ?>
+                    <option value="<?php echo esc_attr( $body_term->name ); ?>"><?php echo esc_html( $body_term->name ); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
             <div>
               <label for="f-drive">Привод</label>
-              <select id="f-drive">
+              <select id="f-drive" data-catalog-filter="drive">
                 <option value="">Любой</option>
-                <option>Передний</option>
-                <option>Полный</option>
+                <option value="Передний">Передний</option>
+                <option value="Задний">Задний</option>
+                <option value="Полный">Полный</option>
               </select>
             </div>
             <div>
               <label for="f-fuel">Топливо</label>
-              <select id="f-fuel">
+              <select id="f-fuel" data-catalog-filter="fuel">
                 <option value="">Любое</option>
-                <option>Бензин</option>
-                <option>Дизель</option>
-                <option>Гибрид</option>
-                <option>Электро</option>
+                <option value="Бензин">Бензин</option>
+                <option value="Дизель">Дизель</option>
+                <option value="Газ">Газ</option>
+                <option value="Электро">Электро</option>
+                <option value="Гибрид">Гибрид</option>
               </select>
             </div>
             <div>
               <label for="f-power">Мощность</label>
-              <select id="f-power">
+              <select id="f-power" data-catalog-filter="power">
                 <option value="">Любая</option>
-                <option>до 160 л.с.</option>
-                <option>160–250 л.с.</option>
-                <option>от 250 л.с.</option>
+                <option value="160-">до 160 л.с.</option>
+                <option value="160-250">160–250 л.с.</option>
+                <option value="250+">от 250 л.с.</option>
               </select>
             </div>
             <div>
               <label for="f-volume">Объём двигателя</label>
-              <select id="f-volume">
+              <select id="f-volume" data-catalog-filter="volume">
                 <option value="">Любой</option>
-                <option>до 2.0 л</option>
-                <option>от 2.0 л</option>
+                <option value="2-">до 2.0 л</option>
+                <option value="2+">от 2.0 л</option>
               </select>
             </div>
           </div>
-          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 24px">
-            Фильтры в статике без запроса к серверу — в WordPress будут вести на выдачу с параметрами.
-          </p>
-
-          <div class="cards-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))">
-            <article class="car-card">
-              <div class="car-card__img">
-                <span class="car-badge car-badge--korea">Из Кореи</span>
-                <img src="<?php echo esc_url( autoimport_asset_uri( 'assets/hyundai-tucson.png' ) ); ?>" alt="" loading="lazy" />
-              </div>
-              <div class="car-card__body">
-                <h3 class="mt-0">Hyundai Tucson</h3>
-                <p class="car-card__price"><strong>от 2&nbsp;890&nbsp;000&nbsp;₽ под ключ</strong></p>
-                <ul class="car-specs" aria-label="Характеристики">
-                  <li class="car-specs__item" title="Год выпуска">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                    <span class="car-specs__value">2022</span>
-                  </li>
-                  <li class="car-specs__item" title="Пробег">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-                    <span class="car-specs__value">42&nbsp;000 км</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип КПП">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
-                    <span class="car-specs__value">Автомат</span>
-                  </li>
-                  <li class="car-specs__item" title="Привод">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h2l2-7h6l2 7h2M9 10l1-4h4l1 4"/></svg></span>
-                    <span class="car-specs__value">Полный</span>
-                  </li>
-                  <li class="car-specs__item" title="Объём двигателя (л.с.)">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 10h8v8H8z"/><path d="M6 10V7h12v3M10 6V4M14 6V4M10 18v2M14 18v2"/></svg></span>
-                    <span class="car-specs__value">2.0 л (150 л.с.)</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип топлива">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8v18H6z"/><path d="M14 7h2l2 4v10h-4"/></svg></span>
-                    <span class="car-specs__value">Бензин</span>
-                  </li>
-                </ul>
-                <p class="car-card__desc">
-                  Универсальный кроссовер с богатой комплектацией
-                </p>
-                <span class="tag">Семейный</span>
-                <div class="car-card__actions">
-                  <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/catalog/hyundai-tucson-2022' ) ); ?>">Подробнее</a>
-                  <button type="button" class="btn btn--primary" data-open-form data-form-title="Рассчитаем стоимость Hyundai Tucson под ключ" data-form-type="Расчёт" data-form-source="Каталог / Карточка" data-form-car="Hyundai Tucson" data-form-button-text="Получить расчёт по авто">
-                    Получить расчёт по авто
-                  </button>
-                </div>
-              </div>
-            </article>
-            <article class="car-card">
-              <div class="car-card__img">
-                <span class="car-badge car-badge--china">Из Китая</span>
-                <img src="<?php echo esc_url( autoimport_asset_uri( 'assets/Geely-Monjaro.jpg' ) ); ?>" alt="" loading="lazy" />
-              </div>
-              <div class="car-card__body">
-                <h3 class="mt-0">Geely Monjaro</h3>
-                <p class="car-card__price"><strong>от 3&nbsp;650&nbsp;000&nbsp;₽ под ключ</strong></p>
-                <ul class="car-specs" aria-label="Характеристики">
-                  <li class="car-specs__item" title="Год выпуска">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                    <span class="car-specs__value">2023</span>
-                  </li>
-                  <li class="car-specs__item" title="Пробег">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-                    <span class="car-specs__value">15&nbsp;000 км</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип КПП">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
-                    <span class="car-specs__value">Автомат</span>
-                  </li>
-                  <li class="car-specs__item" title="Привод">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h2l2-7h6l2 7h2M9 10l1-4h4l1 4"/></svg></span>
-                    <span class="car-specs__value">Полный</span>
-                  </li>
-                  <li class="car-specs__item" title="Объём двигателя (л.с.)">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 10h8v8H8z"/><path d="M6 10V7h12v3M10 6V4M14 6V4M10 18v2M14 18v2"/></svg></span>
-                    <span class="car-specs__value">2.0 л (218 л.с.)</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип топлива">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8v18H6z"/><path d="M14 7h2l2 4v10h-4"/></svg></span>
-                    <span class="car-specs__value">Бензин</span>
-                  </li>
-                </ul>
-                <p class="car-card__desc">
-                  Технологии и комфорт уровня премиум
-                </p>
-                <span class="tag">Технологии</span>
-                <div class="car-card__actions">
-                  <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/catalog' ) ); ?>">Подробнее</a>
-                  <button type="button" class="btn btn--primary" data-open-form data-form-title="Рассчитаем стоимость Geely Monjaro под ключ" data-form-type="Расчёт" data-form-source="Каталог / Карточка" data-form-car="Geely Monjaro" data-form-button-text="Получить расчёт по авто">
-                    Получить расчёт по авто
-                  </button>
-                </div>
-              </div>
-            </article>
-            <article class="car-card">
-              <div class="car-card__img">
-                <span class="car-badge car-badge--europe">Из Европы</span>
-                <img src="<?php echo esc_url( autoimport_asset_uri( 'assets/bmw-x3.jpg' ) ); ?>" alt="" loading="lazy" />
-              </div>
-              <div class="car-card__body">
-                <h3 class="mt-0">BMW X3</h3>
-                <p class="car-card__price"><strong>от 4&nbsp;350&nbsp;000&nbsp;₽ под ключ</strong></p>
-                <ul class="car-specs" aria-label="Характеристики">
-                  <li class="car-specs__item" title="Год выпуска">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                    <span class="car-specs__value">2021</span>
-                  </li>
-                  <li class="car-specs__item" title="Пробег">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-                    <span class="car-specs__value">28&nbsp;000 км</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип КПП">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
-                    <span class="car-specs__value">Автомат</span>
-                  </li>
-                  <li class="car-specs__item" title="Привод">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h2l2-7h6l2 7h2M9 10l1-4h4l1 4"/></svg></span>
-                    <span class="car-specs__value">Полный</span>
-                  </li>
-                  <li class="car-specs__item" title="Объём двигателя (л.с.)">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 10h8v8H8z"/><path d="M6 10V7h12v3M10 6V4M14 6V4M10 18v2M14 18v2"/></svg></span>
-                    <span class="car-specs__value">2.0 л (249 л.с.)</span>
-                  </li>
-                  <li class="car-specs__item" title="Тип топлива">
-                    <span class="car-specs__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8v18H6z"/><path d="M14 7h2l2 4v10h-4"/></svg></span>
-                    <span class="car-specs__value">Бензин</span>
-                  </li>
-                </ul>
-                <p class="car-card__desc">
-                  Премиальный SUV без переплаты рынку РФ
-                </p>
-                <span class="tag">Премиум</span>
-                <div class="car-card__actions">
-                  <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/catalog' ) ); ?>">Подробнее</a>
-                  <button type="button" class="btn btn--primary" data-open-form data-form-title="Рассчитаем стоимость BMW X3 под ключ" data-form-type="Расчёт" data-form-source="Каталог / Карточка" data-form-car="BMW X3" data-form-button-text="Получить расчёт по авто">
-                    Получить расчёт по авто
-                  </button>
-                </div>
-              </div>
-            </article>
+          <div class="country-catalog__toolbar">
+            <p class="country-catalog__count" data-catalog-count></p>
+            <div class="catalog-toolbar__actions">
+              <?php
+              get_template_part(
+                'template-parts/catalog',
+                'sort',
+                array(
+                  'field_id' => 'f-sort',
+                )
+              );
+              ?>
+              <button type="button" class="btn btn--outline btn--sm" data-catalog-filter-reset>Сбросить фильтры</button>
+            </div>
           </div>
 
+          <div class="cards-grid" data-catalog-grid style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))">
+            <?php
+            $cars_query = new WP_Query(
+              array(
+                'post_type'      => 'car',
+                'post_status'    => 'publish',
+                'posts_per_page' => -1,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+              )
+            );
+
+            if ( $cars_query->have_posts() ) :
+              $catalog_card_index = 0;
+              while ( $cars_query->have_posts() ) :
+                $cars_query->the_post();
+                get_template_part(
+                  'template-parts/car',
+                  'card',
+                  array(
+                    'car'         => get_the_ID(),
+                    'form_source' => 'Каталог / Карточка',
+                    'page_hidden' => $catalog_card_index >= autoimport_catalog_page_size(),
+                  )
+                );
+                ++$catalog_card_index;
+              endwhile;
+              wp_reset_postdata();
+            else :
+              ?>
+              <p style="color: var(--text-muted); margin: 0">В каталоге пока нет автомобилей.</p>
+            <?php endif; ?>
+          </div>
+
+          <nav class="country-catalog__pagination" data-catalog-pagination aria-label="Навигация по страницам каталога" hidden>
+            <button type="button" class="country-page-btn country-page-btn--nav" data-catalog-page-prev aria-label="Предыдущая страница">Назад</button>
+            <div class="country-page-list" data-catalog-page-list></div>
+            <button type="button" class="country-page-btn country-page-btn--nav" data-catalog-page-next aria-label="Следующая страница">Вперёд</button>
+          </nav>
+
           <aside class="card" style="margin-top: 48px; text-align: center; max-width: 720px; margin-inline: auto">
-            <h2 class="mt-0">Не нашли подходящий вариант?</h2>
-            <p style="color: var(--text-muted)">
-              Подберём автомобиль под ваш запрос вручную. Часто нужный вариант не попадает в открытую подборку, но его можно найти под заказ.
-            </p>
-            <button type="button" class="btn btn--primary" data-open-form data-form-title="Покажем реальные варианты под ваш запрос" data-form-source="Каталог / Не нашли" data-form-button-text="Получить варианты">
-              Получить варианты
-            </button>
+            <?php if ( $catalog_cta_title ) : ?>
+              <h2 class="mt-0"><?php echo esc_html( $catalog_cta_title ); ?></h2>
+            <?php endif; ?>
+            <?php if ( $catalog_cta_text ) : ?>
+              <p style="color: var(--text-muted)"><?php echo esc_html( $catalog_cta_text ); ?></p>
+            <?php endif; ?>
+            <?php if ( $catalog_cta_btn_text ) : ?>
+              <button type="button" class="btn btn--primary" style="margin-top: 24px" data-open-form data-form-title="Покажем реальные варианты под ваш запрос" data-form-source="Каталог / Не нашли" data-form-button-text="<?php echo esc_attr( $catalog_cta_btn_text ); ?>">
+                <?php echo esc_html( $catalog_cta_btn_text ); ?>
+              </button>
+            <?php endif; ?>
           </aside>
         </div>
       </section>

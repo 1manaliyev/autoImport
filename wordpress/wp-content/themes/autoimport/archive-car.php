@@ -1,14 +1,19 @@
 <?php
+
 /**
- * Car catalog archive — static catalog markup for now.
+
+ * Legacy car archive — catalog is served by the catalog page.
+
  *
+
  * @package AutoImport
+
  */
 
-get_header();
-?>
-<main>
-<?php autoimport_load_static( 'catalog' ); ?>
-</main>
-<?php
-get_footer();
+
+
+wp_safe_redirect( home_url( '/catalog/' ), 301 );
+
+exit;
+
+

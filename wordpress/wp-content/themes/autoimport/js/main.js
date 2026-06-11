@@ -960,20 +960,187 @@
     if (value && !value.textContent.trim()) item.hidden = true;
   });
 
+  function autoimportGetSortValue(card, key) {
+    var raw = card.getAttribute("data-sort-" + key);
+    if (raw === null || raw === "") return null;
+    var num = parseFloat(raw);
+    return isNaN(num) ? null : num;
+  }
+
+  function autoimportSortCarCards(cards, sortValue) {
+    if (!sortValue) return cards.slice();
+    var parts = sortValue.split("-");
+    var key = parts[0];
+    var dir = parts[1] === "asc" ? 1 : -1;
+    return cards.slice().sort(function (a, b) {
+      var va = autoimportGetSortValue(a, key);
+      var vb = autoimportGetSortValue(b, key);
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      if (va === vb) return 0;
+      return (va < vb ? -1 : 1) * dir;
+    });
+  }
+
+  function autoimportAppendCardsToGrid(grid, orderedMatched, hidden, originalOrder) {
+    if (!grid) return;
+    var hiddenSorted = hidden.slice().sort(function (a, b) {
+      return originalOrder.indexOf(a) - originalOrder.indexOf(b);
+    });
+    orderedMatched.concat(hiddenSorted).forEach(function (card) {
+      grid.appendChild(card);
+    });
+  }
+
+  function autoimportScrollToCatalogFirstCard(grid) {
+    if (!grid) return;
+    var firstCard = grid.querySelector(
+      "[data-catalog-car]:not(.is-filtered-out):not(.is-page-hidden)"
+    );
+    if (!firstCard) return;
+    var header = qs(".site-header");
+    var headerOffset = header ? header.offsetHeight : 0;
+    var top =
+      firstCard.getBoundingClientRect().top +
+      window.pageYOffset -
+      headerOffset -
+      16;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  function autoimportRenderCatalogPagination(options) {
+    var pagination = options.pagination;
+    var pageList = options.pageList;
+    var prevBtn = options.prevBtn;
+    var nextBtn = options.nextBtn;
+    var totalCars = options.totalCars;
+    var totalPages = options.totalPages;
+    var currentPage = options.currentPage;
+    var onPageSelect = options.onPageSelect;
+    var minCarsForNav = options.minCarsForNav || 10;
+
+    if (!pagination || !pageList) return;
+    if (totalPages <= 1 || totalCars < minCarsForNav) {
+      pagination.hidden = true;
+      if (prevBtn) prevBtn.hidden = true;
+      if (nextBtn) nextBtn.hidden = true;
+      return;
+    }
+
+    pagination.hidden = false;
+    if (prevBtn) prevBtn.hidden = currentPage <= 1;
+    if (nextBtn) nextBtn.hidden = currentPage >= totalPages;
+
+    pageList.innerHTML = "";
+    for (var p = 1; p <= totalPages; p++) {
+      (function (page) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className =
+          "country-page-btn" + (page === currentPage ? " is-active" : "");
+        btn.textContent = String(page);
+        btn.setAttribute("aria-label", "Страница " + page);
+        if (page === currentPage) btn.setAttribute("aria-current", "page");
+        btn.addEventListener("click", function () {
+          onPageSelect(page);
+        });
+        pageList.appendChild(btn);
+      })(p);
+    }
+  }
+
+  function autoimportSyncCatalogSortUi(select) {
+    if (!select) return;
+    var wrap = select.closest("[data-catalog-sort-wrap]");
+    if (!wrap) return;
+    var labelEl = qs("[data-catalog-sort-label]", wrap);
+    var selected = select.options[select.selectedIndex];
+    if (labelEl && selected) labelEl.textContent = selected.textContent;
+    qsa("[data-catalog-sort-option]", wrap).forEach(function (btn) {
+      var active = (btn.getAttribute("data-value") || "") === select.value;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  }
+
+  function autoimportCloseCatalogSortMenu(wrap) {
+    if (!wrap) return;
+    var trigger = qs("[data-catalog-sort-trigger]", wrap);
+    var menu = qs("[data-catalog-sort-menu]", wrap);
+    if (menu) menu.hidden = true;
+    if (trigger) {
+      trigger.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  qsa("[data-catalog-sort-wrap]").forEach(function (wrap) {
+    var select = qs("[data-catalog-sort]", wrap);
+    var trigger = qs("[data-catalog-sort-trigger]", wrap);
+    var menu = qs("[data-catalog-sort-menu]", wrap);
+    var options = qsa("[data-catalog-sort-option]", wrap);
+    if (!select || !trigger || !menu) return;
+
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      qsa("[data-catalog-sort-wrap]").forEach(function (other) {
+        if (other !== wrap) autoimportCloseCatalogSortMenu(other);
+      });
+      var willOpen = menu.hidden;
+      if (willOpen) {
+        menu.hidden = false;
+        trigger.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+      } else {
+        autoimportCloseCatalogSortMenu(wrap);
+      }
+    });
+
+    options.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        select.value = btn.getAttribute("data-value") || "";
+        autoimportSyncCatalogSortUi(select);
+        autoimportCloseCatalogSortMenu(wrap);
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+
+    select.addEventListener("change", function () {
+      autoimportSyncCatalogSortUi(select);
+    });
+
+    autoimportSyncCatalogSortUi(select);
+  });
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-catalog-sort-wrap]")) return;
+    qsa("[data-catalog-sort-wrap]").forEach(autoimportCloseCatalogSortMenu);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    qsa("[data-catalog-sort-wrap]").forEach(autoimportCloseCatalogSortMenu);
+  });
+
   /* Каталог на страницах стран */
   qsa("[data-country-catalog]").forEach(function (section) {
     var cards = qsa("[data-catalog-car]", section);
+    var grid = qs("[data-country-catalog-grid]", section);
     var filters = qsa("[data-country-filter]", section);
     var chips = qsa("[data-country-brand]", section);
+    var sortSelect = qs("[data-catalog-sort]", section);
     var resetBtn = qs("[data-country-filter-reset]", section);
     var countEl = qs("[data-country-catalog-count]", section);
+    var originalOrder = cards.slice();
     var pagination = qs("[data-country-pagination]", section);
     var pageList = qs("[data-country-page-list]", section);
     var prevBtn = qs("[data-country-page-prev]", section);
     var nextBtn = qs("[data-country-page-next]", section);
     var pageSize =
-      parseInt(section.getAttribute("data-country-page-size"), 10) || 3;
+      parseInt(section.getAttribute("data-country-page-size"), 10) || 9;
     var currentPage = 1;
+    var lastTotalPages = 1;
     var state = {};
 
     function setCount(matched, onPage, totalPages) {
@@ -998,44 +1165,28 @@
       });
     }
 
-    function renderPagination(totalPages) {
-      if (!pagination || !pageList) return;
-      if (totalPages <= 1) {
-        pagination.hidden = true;
-        return;
-      }
-      pagination.hidden = false;
-      if (prevBtn) prevBtn.disabled = currentPage <= 1;
-      if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
-      pageList.innerHTML = "";
-      for (var p = 1; p <= totalPages; p++) {
-        (function (page) {
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className =
-            "country-page-btn" + (page === currentPage ? " is-active" : "");
-          btn.textContent = String(page);
-          btn.setAttribute("aria-label", "Страница " + page);
-          if (page === currentPage) btn.setAttribute("aria-current", "page");
-          btn.addEventListener("click", function () {
-            currentPage = page;
-            refreshView();
-          });
-          pageList.appendChild(btn);
-        })(p);
-      }
-    }
-
-    function refreshView(resetPage) {
+    function refreshView(resetPage, scrollToFirstCard) {
       if (resetPage) currentPage = 1;
       var matched = [];
+      var hidden = [];
+      var sortValue = sortSelect ? sortSelect.value : "";
       cards.forEach(function (card) {
         var ok = cardMatches(card);
         card.classList.toggle("is-filtered-out", !ok);
         card.classList.remove("is-page-hidden");
         if (ok) matched.push(card);
+        else hidden.push(card);
       });
+      if (sortValue) {
+        matched = autoimportSortCarCards(matched, sortValue);
+      } else {
+        matched.sort(function (a, b) {
+          return originalOrder.indexOf(a) - originalOrder.indexOf(b);
+        });
+      }
+      autoimportAppendCardsToGrid(grid, matched, hidden, originalOrder);
       var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      lastTotalPages = totalPages;
       if (currentPage > totalPages) currentPage = totalPages;
       var onPage = 0;
       matched.forEach(function (card, index) {
@@ -1045,11 +1196,26 @@
         if (visible) onPage += 1;
       });
       setCount(matched.length, onPage, totalPages);
-      renderPagination(totalPages);
+      autoimportRenderCatalogPagination({
+        pagination: pagination,
+        pageList: pageList,
+        prevBtn: prevBtn,
+        nextBtn: nextBtn,
+        totalCars: matched.length,
+        totalPages: totalPages,
+        currentPage: currentPage,
+        onPageSelect: function (page) {
+          currentPage = page;
+          refreshView(false, true);
+        },
+      });
+      if (scrollToFirstCard) {
+        autoimportScrollToCatalogFirstCard(grid);
+      }
     }
 
     function applyFilters() {
-      refreshView(true);
+      refreshView(true, false);
     }
 
     filters.forEach(function (el) {
@@ -1085,6 +1251,12 @@
       });
     });
 
+    if (sortSelect) {
+      sortSelect.addEventListener("change", function () {
+        applyFilters();
+      });
+    }
+
     if (resetBtn) {
       resetBtn.addEventListener("click", function () {
         state = {};
@@ -1092,6 +1264,10 @@
           var key = el.getAttribute("data-country-filter");
           if (key && key !== "country") el.value = "";
         });
+        if (sortSelect) {
+          sortSelect.value = "";
+          autoimportSyncCatalogSortUi(sortSelect);
+        }
         chips.forEach(function (chip, i) {
           chip.classList.toggle("is-active", i === 0);
         });
@@ -1103,14 +1279,15 @@
       prevBtn.addEventListener("click", function () {
         if (currentPage <= 1) return;
         currentPage -= 1;
-        refreshView(false);
+        refreshView(false, true);
       });
     }
 
     if (nextBtn) {
       nextBtn.addEventListener("click", function () {
+        if (currentPage >= lastTotalPages) return;
         currentPage += 1;
-        refreshView(false);
+        refreshView(false, true);
       });
     }
 
@@ -1222,17 +1399,195 @@
     }
   });
 
-  /* Catalog brand links — заглушка для статики */
-  qsa("[data-brand-filter]").forEach(function (el) {
-    el.addEventListener("click", function (e) {
-      e.preventDefault();
-      var brand = el.getAttribute("data-brand-filter");
-      var catalogUrl = "catalog.html";
-      if (/\/catalog\//.test(window.location.pathname || "")) {
-        catalogUrl = "../catalog.html";
+  /* Каталог — фильтры по стране, марке и модели */
+  qsa("[data-catalog]").forEach(function (section) {
+    var cards = qsa("[data-catalog-car]", section);
+    var grid = qs("[data-catalog-grid]", section);
+    var filters = qsa("[data-catalog-filter]", section);
+    var brandLinks = qsa("[data-brand-filter]", section);
+    var sortSelect = qs("[data-catalog-sort]", section);
+    var resetBtn = qs("[data-catalog-filter-reset]", section);
+    var countEl = qs("[data-catalog-count]", section);
+    var pagination = qs("[data-catalog-pagination]", section);
+    var pageList = qs("[data-catalog-page-list]", section);
+    var prevBtn = qs("[data-catalog-page-prev]", section);
+    var nextBtn = qs("[data-catalog-page-next]", section);
+    var pageSize =
+      parseInt(section.getAttribute("data-catalog-page-size"), 10) || 9;
+    var currentPage = 1;
+    var lastTotalPages = 1;
+    var originalOrder = cards.slice();
+    var state = {};
+
+    function setCount(matched, onPage, totalPages) {
+      if (!countEl) return;
+      if (!matched) {
+        countEl.textContent = "Нет автомобилей по выбранным фильтрам";
+        return;
       }
-      window.location.href =
-        catalogUrl + "?brand=" + encodeURIComponent(brand);
+      var text = "Показано " + onPage + " из " + matched + " автомобилей";
+      if (totalPages > 1) {
+        text += " · стр. " + currentPage + " из " + totalPages;
+      }
+      countEl.textContent = text;
+    }
+
+    function cardMatches(card) {
+      return Object.keys(state).every(function (key) {
+        var val = state[key];
+        if (!val) return true;
+        return (card.getAttribute("data-" + key) || "") === val;
+      });
+    }
+
+    function refreshView(resetPage, scrollToFirstCard) {
+      if (resetPage) currentPage = 1;
+      var matched = [];
+      var hidden = [];
+      var sortValue = sortSelect ? sortSelect.value : "";
+      cards.forEach(function (card) {
+        var ok = cardMatches(card);
+        card.classList.toggle("is-filtered-out", !ok);
+        card.classList.remove("is-page-hidden");
+        if (ok) matched.push(card);
+        else hidden.push(card);
+      });
+      if (sortValue) {
+        matched = autoimportSortCarCards(matched, sortValue);
+      } else {
+        matched.sort(function (a, b) {
+          return originalOrder.indexOf(a) - originalOrder.indexOf(b);
+        });
+      }
+      autoimportAppendCardsToGrid(grid, matched, hidden, originalOrder);
+      var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      lastTotalPages = totalPages;
+      if (currentPage > totalPages) currentPage = totalPages;
+      var onPage = 0;
+      matched.forEach(function (card, index) {
+        var page = Math.floor(index / pageSize) + 1;
+        var visible = page === currentPage;
+        card.classList.toggle("is-page-hidden", !visible);
+        if (visible) onPage += 1;
+      });
+      setCount(matched.length, onPage, totalPages);
+      autoimportRenderCatalogPagination({
+        pagination: pagination,
+        pageList: pageList,
+        prevBtn: prevBtn,
+        nextBtn: nextBtn,
+        totalCars: matched.length,
+        totalPages: totalPages,
+        currentPage: currentPage,
+        onPageSelect: function (page) {
+          currentPage = page;
+          refreshView(false, true);
+        },
+      });
+      if (scrollToFirstCard) {
+        autoimportScrollToCatalogFirstCard(grid);
+      }
+    }
+
+    function applyFilters() {
+      refreshView(true, false);
+    }
+
+    function setBrandFilter(brand) {
+      state.brand = brand || "";
+      filters.forEach(function (el) {
+        if (el.getAttribute("data-catalog-filter") === "brand") {
+          el.value = brand || "";
+        }
+      });
+      brandLinks.forEach(function (link) {
+        link.classList.toggle(
+          "is-active",
+          link.getAttribute("data-brand-filter") === (brand || "")
+        );
+      });
+      applyFilters();
+    }
+
+    filters.forEach(function (el) {
+      el.addEventListener("change", function () {
+        var key = el.getAttribute("data-catalog-filter");
+        if (!key) return;
+        state[key] = el.value || "";
+        if (key === "brand") {
+          brandLinks.forEach(function (link) {
+            link.classList.toggle(
+              "is-active",
+              link.getAttribute("data-brand-filter") === (el.value || "")
+            );
+          });
+        }
+        applyFilters();
+      });
     });
+
+    brandLinks.forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.preventDefault();
+        setBrandFilter(el.getAttribute("data-brand-filter") || "");
+      });
+    });
+
+    if (sortSelect) {
+      sortSelect.addEventListener("change", applyFilters);
+    }
+
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        state = {};
+        filters.forEach(function (el) {
+          el.value = "";
+        });
+        if (sortSelect) {
+          sortSelect.value = "";
+          autoimportSyncCatalogSortUi(sortSelect);
+        }
+        setBrandFilter("");
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (currentPage <= 1) return;
+        currentPage -= 1;
+        refreshView(false, true);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (currentPage >= lastTotalPages) return;
+        currentPage += 1;
+        refreshView(false, true);
+      });
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("brand")) {
+      setBrandFilter(params.get("brand"));
+    }
+    if (params.get("model")) {
+      state.model = params.get("model");
+      filters.forEach(function (el) {
+        if (el.getAttribute("data-catalog-filter") === "model") {
+          el.value = params.get("model");
+        }
+      });
+    }
+    if (params.get("country")) {
+      state.country = params.get("country");
+      filters.forEach(function (el) {
+        if (el.getAttribute("data-catalog-filter") === "country") {
+          el.value = params.get("country");
+        }
+      });
+    }
+
+    applyFilters();
   });
 })();

@@ -6,12 +6,12 @@
  */
 
 get_header();
-
-$loaded = autoimport_load_static( 'blog' );
 ?>
 <main>
 <?php
-if ( empty( $loaded ) ) {
+$loaded = autoimport_load_static( 'blog' );
+
+if ( empty( $loaded ) ) :
 	?>
 	<div class="page-main">
 		<div class="page-hero">
@@ -33,7 +33,7 @@ if ( empty( $loaded ) ) {
 		</section>
 	</div>
 	<?php
-}
+endif;
 ?>
 </main>
 <?php

@@ -107,26 +107,4 @@ $autoimport_page_meta = array( 'title' => 'Документы и сертифи�
           </div>
         </div>
       </section>
-      <section class="section related-blog">
-        <div class="container">
-          <div class="section-heading-row">
-            <div>
-              <p class="eyebrow">Блог</p>
-              <h2>Полезные статьи</h2>
-            </div>
-            <p>Разборы по странам, бюджету и выбору автомобиля.</p>
-          </div>
-          <div class="related-blog__grid">
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-korei' ) ); ?>">Как купить авто из Кореи<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-kitaya' ) ); ?>">Как купить авто из Китая<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-evropy' ) ); ?>">Как купить авто из Европы<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/kak-kupit-avto-ssha' ) ); ?>">Как купить авто из США<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/semeynyy-krossover' ) ); ?>">Как не ошибиться при выборе семейного кроссовера<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/luchshie-avto-budget' ) ); ?>">Лучшие авто до 3 / 4 / 5 млн рублей<span>Читать статью</span></a>
-            <a class="related-blog__card" href="<?php echo esc_url( home_url( '/blog/kitayskie-gibridy' ) ); ?>">Что важно знать про китайские гибриды<span>Читать статью</span></a>
-          </div>
-          <div class="related-blog__actions">
-            <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/blog' ) ); ?>">Все статьи</a>
-          </div>
-        </div>
-      </section>
+      <?php get_template_part( 'template-parts/related', 'blog' ); ?>
