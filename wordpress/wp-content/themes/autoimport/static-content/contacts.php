@@ -3,13 +3,19 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $autoimport_page_meta = array( 'title' => 'Контакты — AutoImport', 'description' => null, 'extra_head' => '', 'has_quiz' => false, 'has_swiper' => false );
 $firstSection = get_field( 'первая_секция' );
-$info = get_field( 'информация' );
-$phoneBlock = $info['блок_с_телефоном'];
-$messengersBlock = $info['блок_с_мессенджерами'];
-$emailBlock = $info['блок_с_email'];
-$officeBlock = $info['блок_с_офисом'];
-$storeBlock = $info['блок_с_площадкой'];
-$requisitesBlock = $info['блок_с_реквизитами'];
+$info           = get_field( 'информация' ) ?: array();
+$phoneBlock      = $info['блок_с_телефоном'] ?? array();
+$messengersBlock = $info['блок_с_мессенджерами'] ?? array();
+$emailBlock      = $info['блок_с_email'] ?? array();
+$officeBlock     = $info['блок_с_офисом'] ?? array();
+$storeBlock      = $info['блок_с_площадкой'] ?? array();
+$requisitesBlock = $info['блок_с_реквизитами'] ?? array();
+$mapBlock        = get_field('карта');
+$map_lat         = (float) ( $mapBlock['широта'] ?? 55.7558 );
+$map_lng         = (float) ( $mapBlock['долгота'] ?? 37.6173 );
+$map_zoom        = (int) ( $mapBlock['масштаб'] ?? 16 );
+$map_label       = (string) ( $mapBlock['метка'] ?? 'AutoImport' );
+$formBlock       = get_field('форма');
 ?>
 <section class="page-hero contacts-hero">
   <div class="container">
@@ -70,14 +76,21 @@ $requisitesBlock = $info['блок_с_реквизитами'];
           </article>
         <?php endif; ?>
       </div>
-
       <div class="contacts-map">
-        <div class="map-placeholder">Карта офиса / площадки</div>
+        <div
+          class="contacts-map__canvas"
+          data-yandex-map
+          data-map-lat="<?php echo esc_attr( (string) $map_lat ); ?>"
+          data-map-lng="<?php echo esc_attr( (string) $map_lng ); ?>"
+          data-map-zoom="<?php echo esc_attr( (string) $map_zoom ); ?>"
+          data-map-hint="<?php echo esc_attr( $map_label ); ?>"
+          aria-label="<?php echo esc_attr( $map_label ); ?>"
+        ></div>
       </div>
     </div>
 
     <aside class="form-block contacts-form">
-      <h2 class="mt-0">Задать вопрос</h2>
+      <h2 class="mt-0"><?=$formBlock['заголовок'];?></h2>
       <form data-lead-form data-form-main>
         <input type="hidden" name="lead_source" value="Контакты / Форма" />
         <input type="hidden" name="lead_type" value="Консультация" />

@@ -313,6 +313,28 @@ function autoimport_catalog_page_size(): int {
 }
 
 /**
+ * Yandex Maps API key (ACF override, wp-config constant, or default).
+ */
+function autoimport_get_yandex_maps_api_key( string $acf_key = '' ): string {
+	if ( '' !== trim( $acf_key ) ) {
+		return trim( $acf_key );
+	}
+
+	if ( defined( 'AUTOIMPORT_YANDEX_MAPS_API_KEY' ) ) {
+		return (string) AUTOIMPORT_YANDEX_MAPS_API_KEY;
+	}
+
+	return 'c4d8f1ac-7d96-49dd-b540-4f0d5e9624ee';
+}
+
+/**
+ * Whether the current page should load Yandex Maps.
+ */
+function autoimport_page_needs_yandex_map(): bool {
+	return 'contacts' === autoimport_resolve_static_slug();
+}
+
+/**
  * Enqueue styles and scripts.
  */
 function autoimport_enqueue_assets(): void {
@@ -353,6 +375,18 @@ function autoimport_enqueue_assets(): void {
 			true
 		);
 		$main_deps[] = 'swiper';
+	}
+
+	if ( autoimport_page_needs_yandex_map() ) {
+		$yandex_maps_key = autoimport_get_yandex_maps_api_key();
+		wp_enqueue_script(
+			'yandex-maps',
+			'https://api-maps.yandex.ru/2.1/?apikey=' . rawurlencode( $yandex_maps_key ) . '&lang=ru_RU',
+			array(),
+			null,
+			true
+		);
+		$main_deps[] = 'yandex-maps';
 	}
 
 	wp_enqueue_script(

@@ -4261,6 +4261,15 @@ span.country-page-btn.is-disabled {
   margin-top: 16px;
 }
 
+.contacts-map__canvas {
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-page);
+}
+
 .contacts-form {
   position: sticky;
   top: calc(var(--header-h) + 24px);

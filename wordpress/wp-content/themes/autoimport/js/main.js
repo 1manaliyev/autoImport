@@ -1647,4 +1647,29 @@
 
     applyFilters();
   });
+
+  /* Yandex Map (contacts page) */
+  var yandexMapEl = qs("[data-yandex-map]");
+  if (yandexMapEl && typeof ymaps !== "undefined") {
+    var mapLat = parseFloat(yandexMapEl.getAttribute("data-map-lat")) || 55.7558;
+    var mapLng = parseFloat(yandexMapEl.getAttribute("data-map-lng")) || 37.6173;
+    var mapZoom = parseInt(yandexMapEl.getAttribute("data-map-zoom"), 10) || 16;
+    var mapHint = yandexMapEl.getAttribute("data-map-hint") || "";
+
+    ymaps.ready(function () {
+      var map = new ymaps.Map(yandexMapEl, {
+        center: [mapLat, mapLng],
+        zoom: mapZoom,
+        controls: ["zoomControl", "fullscreenControl"],
+      });
+
+      map.geoObjects.add(
+        new ymaps.Placemark(
+          [mapLat, mapLng],
+          { balloonContent: mapHint },
+          { preset: "islands#goldDotIcon" }
+        )
+      );
+    });
+  }
 })();
