@@ -399,38 +399,76 @@
   qsa("[data-client-reviews]").forEach(function (section) {
     var cards = qsa(".client-review-card[data-review-platform]", section);
     var filters = qsa("[data-review-filter]", section);
+    var showMoreBtn = qs("[data-review-show-more]", section);
+    var showMoreWrap = showMoreBtn ? showMoreBtn.closest(".reviews-more") : null;
     var activeFilter = "all";
+    var pageSize =
+      parseInt(section.getAttribute("data-review-page-size"), 10) || 6;
+    var visibleLimit = pageSize;
 
     function cardMatches(card) {
       if (activeFilter === "all") return true;
       return card.getAttribute("data-review-platform") === activeFilter;
     }
 
-    function applyReviewFilter() {
+    function setShowMoreVisible(visible) {
+      if (!showMoreBtn) return;
+      showMoreBtn.hidden = !visible;
+      if (showMoreWrap) showMoreWrap.hidden = !visible;
+    }
+
+    function applyReviewView() {
+      var matched = cards.filter(cardMatches);
+
       cards.forEach(function (card) {
         card.classList.toggle("is-filtered-out", !cardMatches(card));
       });
+
+      matched.forEach(function (card, index) {
+        card.classList.toggle("is-hidden", index >= visibleLimit);
+      });
+
+      setShowMoreVisible(matched.length > visibleLimit);
     }
 
     filters.forEach(function (btn) {
       btn.addEventListener("click", function () {
         activeFilter = btn.getAttribute("data-review-filter") || "all";
+        visibleLimit = pageSize;
         filters.forEach(function (filterBtn) {
           var isActive = filterBtn === btn;
           filterBtn.classList.toggle("is-active", isActive);
           filterBtn.setAttribute("aria-selected", isActive ? "true" : "false");
         });
-        applyReviewFilter();
+        applyReviewView();
       });
     });
+
+    if (showMoreBtn) {
+      showMoreBtn.addEventListener("click", function () {
+        visibleLimit += pageSize;
+        applyReviewView();
+      });
+    }
+
+    applyReviewView();
   });
 
   qsa("[data-review-show-more]").forEach(function (btn) {
     var section = btn.closest(".reviews-section");
+    if (section && section.hasAttribute("data-client-reviews")) return;
     if (!section || !qsa(".review-extra.is-hidden", section).length) {
       hideReviewMoreButton(btn);
       return;
     }
+
+    var showStep =
+      parseInt(
+        section.getAttribute("data-review-show-step") ||
+          btn.getAttribute("data-review-show-step") ||
+          "0",
+        10
+      ) || 0;
 
     btn.addEventListener("click", function () {
       var hiddenItems = qsa(".review-extra.is-hidden", section);
@@ -439,10 +477,14 @@
         return;
       }
 
-      hiddenItems.forEach(function (item) {
+      var batch = showStep > 0 ? showStep : hiddenItems.length;
+      hiddenItems.slice(0, batch).forEach(function (item) {
         item.classList.remove("is-hidden");
       });
-      hideReviewMoreButton(btn);
+
+      if (!qsa(".review-extra.is-hidden", section).length) {
+        hideReviewMoreButton(btn);
+      }
     });
   });
 
@@ -1018,10 +1060,8 @@
     var totalPages = options.totalPages;
     var currentPage = options.currentPage;
     var onPageSelect = options.onPageSelect;
-    var minCarsForNav = options.minCarsForNav || 10;
-
     if (!pagination || !pageList) return;
-    if (totalPages <= 1 || totalCars < minCarsForNav) {
+    if (!totalCars || totalPages <= 1) {
       pagination.hidden = true;
       if (prevBtn) prevBtn.hidden = true;
       if (nextBtn) nextBtn.hidden = true;
@@ -1418,6 +1458,17 @@
     var lastTotalPages = 1;
     var originalOrder = cards.slice();
     var state = {};
+    var presetPower = section.getAttribute("data-catalog-preset-power") || "";
+
+    function applyPresetPowerFilter() {
+      if (!presetPower) return;
+      state.power = presetPower;
+      filters.forEach(function (el) {
+        if (el.getAttribute("data-catalog-filter") === "power") {
+          el.value = presetPower;
+        }
+      });
+    }
 
     function setCount(matched, onPage, totalPages) {
       if (!countEl) return;
@@ -1541,12 +1592,16 @@
       resetBtn.addEventListener("click", function () {
         state = {};
         filters.forEach(function (el) {
+          if (el.getAttribute("data-catalog-filter") === "power" && presetPower) {
+            return;
+          }
           el.value = "";
         });
         if (sortSelect) {
           sortSelect.value = "";
           autoimportSyncCatalogSortUi(sortSelect);
         }
+        applyPresetPowerFilter();
         setBrandFilter("");
       });
     }
@@ -1566,6 +1621,8 @@
         refreshView(false, true);
       });
     }
+
+    applyPresetPowerFilter();
 
     var params = new URLSearchParams(window.location.search);
     if (params.get("brand")) {

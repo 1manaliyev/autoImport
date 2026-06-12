@@ -2,34 +2,31 @@
 /** Static markup from delivery.html */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $autoimport_page_meta = array( 'title' => 'Доставка — AutoImport', 'description' => null, 'extra_head' => '', 'has_quiz' => false, 'has_swiper' => false );
+$firstSection = get_field('первая_секция');
 ?>
+<style>
+  .hero-bullet__icon p{
+    display: flex;
+    color: var(--accent-hover);
+  }
+</style>
 <section class="page-hero">
         <div class="container">
-          <p class="eyebrow">Доставка</p>
-          <h1>Доставка автомобиля до вашего города</h1>
-          <p class="subtitle mb-0">
-            Сопровождаем логистику на всех этапах — от точки отправки до передачи автомобиля.
-          </p>
-          <div class="page-hero__highlights">
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
-              </span>
-              <p>Международная перевозка под ключ</p>
+          <p class="eyebrow"><?=$firstSection['надзаголовок'];?></p>
+          <h1><?=$firstSection['заголовок'];?></h1>
+          <p class="subtitle mb-0"><?=$firstSection['текст'];?></p>
+          <?php if ($firstSection['блоки']) : ?>
+            <div class="page-hero__highlights">
+              <?php foreach ($firstSection['блоки'] as $advantage) : ?>
+                <div class="hero-bullet">
+                  <span class="hero-bullet__icon ui-icon" aria-hidden="true">
+                    <?=$advantage['иконка'];?>
+                  </span>
+                  <p><?=$advantage['текст'];?></p>
+                </div>
+              <?php endforeach;?>
             </div>
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
-              </span>
-              <p>Таможня и оформление включены</p>
-            </div>
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M10 17h4M3 17h2M17 17h2M5 17V6h10v11M15 17V9h4l2 4v4h-6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-              </span>
-              <p>Доставка до вашего города</p>
-            </div>
-          </div>
+          <?php endif;?>
         </div>
       </section>
 

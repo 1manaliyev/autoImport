@@ -2,80 +2,88 @@
 /** Static markup from podbor.html */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $autoimport_page_meta = array( 'title' => 'Подбор авто под ключ — AutoImport', 'description' => null, 'extra_head' => '', 'has_quiz' => false, 'has_swiper' => false );
+$firstSection = get_field('первая_секция');
+$comparison = get_field('сравнение');
+$bottomBlock = get_field('блок_снизу');
 ?>
+<style>
+  .hero-bullet__icon p{
+    display: flex;
+    color: var(--accent-hover);
+  }
+</style>
 <section class="page-hero">
-        <div class="container">
-          <p class="eyebrow">Подбор под ключ</p>
-          <h1>Вы рассказываете, какой автомобиль нужен</h1>
-          <p class="subtitle mb-0">
-            Мы берём на себя поиск, проверку, покупку, логистику, оформление и передачу автомобиля.
-          </p>
-          <div class="btn-row">
-            <button type="button" class="btn btn--primary" data-open-form data-form-title="Подберём автомобиль под ваш бюджет" data-form-source="Страница / Подбор / Hero" data-form-button-text="Подобрать авто">
-              Подобрать авто
-            </button>
-            <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/catalog' ) ); ?>">Смотреть примеры авто</a>
+  <div class="container">
+    <p class="eyebrow"><?=$firstSection['надзаголовок'];?></p>
+    <h1><?=$firstSection['заголовок'];?></h1>
+    <p class="subtitle mb-0"><?=$firstSection['текст'];?></p>
+    <div class="btn-row">
+      <?php if ($firstSection['кнопки']['кнопка_1']['текст']) :?>
+        <button type="button" class="btn btn--primary" data-open-form data-form-title="Подберём автомобиль под ваш бюджет" data-form-source="Страница / Подбор / Hero" data-form-button-text="Подобрать авто">
+          Подобрать авто
+        </button>
+      <?php endif;?>
+      <?php if ($firstSection['кнопки']['кнопка_2']['текст'] && $firstSection['кнопки']['кнопка_2']['ссылка']) :?>
+        <a class="btn btn--outline" href="<?php echo esc_url( home_url( '/catalog' ) ); ?>">
+          <?=$firstSection['кнопки']['кнопка_2']['текст'];?>
+        </a>
+      <?php endif;?>
+    </div>
+    <?php if ($firstSection['блоки']) :?>
+      <div class="page-hero__highlights">
+        <?php foreach ($firstSection['блоки'] as $block) :?>
+          <div class="hero-bullet">
+            <span class="hero-bullet__icon ui-icon" aria-hidden="true">
+              <?=$block['иконка'];?>
+            </span>
+            <p><?=$block['текст'];?></p>
           </div>
-          <div class="page-hero__highlights">
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
-              </span>
-              <p>1 заявка на весь процесс</p>
+        <?php endforeach;?>
+      </div>
+    <?php endif;?>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <p class="eyebrow"><?=$comparison['надзаголовок'];?></p>
+    <h2><?=$comparison['заголовок'];?></h2>
+    <?php if ($comparison['самостоятельно'] || $comparison['с_нами']) :?>
+      <div class="split-2 fit-grid">
+        <?php if ($comparison['самостоятельно']) :?>
+          <div class="fit-card fit-card--no">
+            <div class="fit-card__head">
+              <span class="fit-card__icon" aria-hidden="true">−</span>
+              <h3>Самостоятельно</h3>
             </div>
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-              </span>
-              <p>Проверяем авто до покупки</p>
-            </div>
-            <div class="hero-bullet">
-              <span class="hero-bullet__icon ui-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2.7-5.4A2 2 0 0 0 13.7 3H10.3a2 2 0 0 0-1.8 1.1L6 10l-2.5 1.1C2.7 11.3 2 12.1 2 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-              </span>
-              <p>Под ключ — до передачи авто</p>
-            </div>
+            <ul>
+              <?php foreach ($comparison['самостоятельно'] as $item) :?>
+                <li><?=$item['текст'];?></li>
+              <?php endforeach;?>
+            </ul>
           </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="container">
-          <p class="eyebrow">Сравнение</p>
-          <h2>Самостоятельно или с сопровождением</h2>
-          <div class="split-2 fit-grid">
-            <div class="fit-card fit-card--no">
-              <div class="fit-card__head">
-                <span class="fit-card__icon" aria-hidden="true">−</span>
-                <h3>Самостоятельно</h3>
-              </div>
-              <ul>
-                <li>риск ошибки при выборе</li>
-                <li>сложная логистика</li>
-                <li>непредсказуемые расходы</li>
-                <li>нет сопровождения</li>
-              </ul>
+        <?php endif;?>
+        <?php if ($comparison['с_нами']) :?>
+          <div class="fit-card fit-card--yes">
+            <div class="fit-card__head">
+              <span class="fit-card__icon" aria-hidden="true">✓</span>
+              <h3>С нами</h3>
             </div>
-            <div class="fit-card fit-card--yes">
-              <div class="fit-card__head">
-                <span class="fit-card__icon" aria-hidden="true">✓</span>
-                <h3>С нами</h3>
-              </div>
-              <ul>
-                <li>проверка до покупки</li>
-                <li>понятная схема сделки</li>
-                <li>расчёт всех расходов заранее</li>
-                <li>сопровождение до получения авто</li>
-              </ul>
-            </div>
+            <ul>
+              <?php foreach ($comparison['с_нами'] as $item) :?>
+                <li><?=$item['текст'];?></li>
+              <?php endforeach;?>
+            </ul>
           </div>
-          <div class="country-cta">
-            <h2>Оставьте заявку на подбор под ключ</h2>
-            <p>Расскажите, какой автомобиль нужен, а мы подберём варианты и покажем понятный расчёт под ваш бюджет.</p>
-            <button type="button" class="btn btn--primary" data-open-form data-form-title="Покажем реальные варианты под ваш запрос" data-form-source="Страница / Подбор / CTA" data-form-button-text="Получить варианты">
-              Получить варианты
-            </button>
-          </div>
-        </div>
-      </section>
-      <?php get_template_part( 'template-parts/related', 'blog' ); ?>
+        <?php endif;?>
+      </div>
+    <?php endif;?>
+    <div class="country-cta">
+      <h2><?=$bottomBlock['заголовок'];?></h2>
+      <p><?=$bottomBlock['текст'];?></p>
+      <button type="button" class="btn btn--primary" data-open-form data-form-title="Покажем реальные варианты под ваш запрос" data-form-source="Страница / Подбор / CTA" data-form-button-text="Получить варианты">
+        <?=$bottomBlock['текст_кнопки'];?>
+      </button>
+    </div>
+  </div>
+</section>
+<?php get_template_part( 'template-parts/related', 'blog' ); ?>

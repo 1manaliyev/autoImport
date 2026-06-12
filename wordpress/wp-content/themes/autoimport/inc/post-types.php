@@ -407,6 +407,53 @@ function autoimport_get_car_taxonomy_names_for_country( string $country, string 
 }
 
 /**
+ * Get taxonomy term names used by specific cars.
+ *
+ * @param int[] $car_ids Car post IDs.
+ * @return string[]
+ */
+function autoimport_get_car_taxonomy_names_for_car_ids( array $car_ids, string $taxonomy ): array {
+	$names = array();
+
+	foreach ( $car_ids as $car_id ) {
+		$terms = wp_get_post_terms( (int) $car_id, $taxonomy );
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			continue;
+		}
+		foreach ( $terms as $term ) {
+			$names[ $term->slug ] = $term->name;
+		}
+	}
+
+	natcasesort( $names );
+
+	return array_values( $names );
+}
+
+/**
+ * Query published cars with engine power up to the given limit.
+ */
+function autoimport_get_cars_up_to_power_query( int $max_power = 160 ): WP_Query {
+	return new WP_Query(
+		array(
+			'post_type'      => 'car',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'meta_query'     => array(
+				array(
+					'key'     => 'мощность',
+					'value'   => $max_power,
+					'type'    => 'NUMERIC',
+					'compare' => '<=',
+				),
+			),
+		)
+	);
+}
+
+/**
  * Assign model terms to cars by matching model name in the post title.
  */
 function autoimport_sync_existing_car_models(): void {

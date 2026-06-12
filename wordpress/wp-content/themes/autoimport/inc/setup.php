@@ -66,6 +66,46 @@ function autoimport_car_type_tag_class( string $type ): string {
 }
 
 /**
+ * Map review platform label from ACF to filter slug.
+ */
+function autoimport_get_review_platform_slug( string $platform ): string {
+	$map = array(
+		'Яндекс'  => 'yandex',
+		'2ГИС'    => '2gis',
+		'Google'  => 'google',
+		'Соцсети' => 'social',
+	);
+	return $map[ trim( $platform ) ] ?? sanitize_title( $platform );
+}
+
+/**
+ * Resolve ACF image field to URL.
+ */
+function autoimport_get_acf_image_url( $image ): string {
+	if ( is_array( $image ) ) {
+		return (string) ( $image['url'] ?? '' );
+	}
+	if ( is_numeric( $image ) ) {
+		return (string) wp_get_attachment_image_url( (int) $image, 'thumbnail' );
+	}
+	return is_string( $image ) ? trim( $image ) : '';
+}
+
+/**
+ * First letter of a person's name for avatar fallback.
+ */
+function autoimport_get_name_initial( string $name ): string {
+	$name = trim( $name );
+	if ( '' === $name ) {
+		return '';
+	}
+	if ( function_exists( 'mb_substr' ) && function_exists( 'mb_strtoupper' ) ) {
+		return mb_strtoupper( mb_substr( $name, 0, 1 ) );
+	}
+	return strtoupper( substr( $name, 0, 1 ) );
+}
+
+/**
  * Map turnkey price to catalog filter bucket.
  */
 function autoimport_get_price_filter_bucket( $price ): string {

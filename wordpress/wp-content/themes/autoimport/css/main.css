@@ -1666,6 +1666,11 @@ h3 {
   margin: 24px 0 0;
 }
 
+.country-catalog__pagination[hidden],
+.country-page-btn[hidden] {
+  display: none !important;
+}
+
 .country-page-list {
   display: flex;
   align-items: center;
@@ -3039,6 +3044,15 @@ span.country-page-btn.is-disabled {
   color: var(--accent-hover);
   font-weight: 700;
   font-size: 0.95rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.client-review-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .client-review-card__meta strong {
