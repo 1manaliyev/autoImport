@@ -337,6 +337,7 @@ function autoimport_enqueue_assets(): void {
 	);
 
 	$needs_swiper = is_singular( 'car' ) || autoimport_page_needs_swiper();
+	$main_deps    = array();
 	if ( $needs_swiper ) {
 		wp_enqueue_style(
 			'swiper',
@@ -351,12 +352,13 @@ function autoimport_enqueue_assets(): void {
 			'11',
 			true
 		);
+		$main_deps[] = 'swiper';
 	}
 
 	wp_enqueue_script(
 		'autoimport-main',
 		autoimport_asset_uri( 'js/main.js' ),
-		array(),
+		$main_deps,
 		$main_js_version,
 		true
 	);
@@ -374,19 +376,102 @@ function autoimport_enqueue_assets(): void {
 add_action( 'wp_enqueue_scripts', 'autoimport_enqueue_assets' );
 
 /**
+ * Resolve static template slug for the current page request.
+ */
+function autoimport_resolve_static_slug( ?int $queried_id = null ): string {
+	$queried_id = $queried_id ?? (int) get_queried_object_id();
+	if ( ! $queried_id ) {
+		return '';
+	}
+
+	$posts_page_id = (int) get_option( 'page_for_posts' );
+	$slug          = (string) get_post_field( 'post_name', $queried_id );
+	$static_slug   = $slug;
+
+	if ( $posts_page_id && $queried_id === $posts_page_id ) {
+		$static_slug = 'blog';
+	}
+
+	$parent_id = wp_get_post_parent_id( $queried_id );
+	if ( $parent_id ) {
+		$parent = get_post( $parent_id );
+		if ( $parent && 'cars' === $parent->post_name && 'power-up-to-160' === $slug ) {
+			$static_slug = 'cars-power-up-to-160';
+		}
+	}
+
+	$file = get_template_directory() . '/static-content/' . $static_slug . '.php';
+
+	return file_exists( $file ) ? $static_slug : '';
+}
+
+/**
+ * Read static page meta without rendering markup.
+ *
+ * @return array<string, mixed>
+ */
+function autoimport_peek_static_meta( string $slug ): array {
+	static $cache = array();
+
+	if ( isset( $cache[ $slug ] ) ) {
+		return $cache[ $slug ];
+	}
+
+	$file = get_template_directory() . '/static-content/' . $slug . '.php';
+	if ( ! file_exists( $file ) ) {
+		$cache[ $slug ] = array();
+		return $cache[ $slug ];
+	}
+
+	global $autoimport_page_meta;
+	$autoimport_page_meta = array();
+	ob_start();
+	include $file;
+	ob_end_clean();
+
+	$cache[ $slug ] = is_array( $autoimport_page_meta ) ? $autoimport_page_meta : array();
+	$autoimport_page_meta = array();
+
+	return $cache[ $slug ];
+}
+
+/**
+ * Static meta for the current request (global or peeked).
+ *
+ * @return array<string, mixed>
+ */
+function autoimport_get_current_static_meta(): array {
+	global $autoimport_page_meta;
+
+	if ( is_array( $autoimport_page_meta ) && ! empty( $autoimport_page_meta ) ) {
+		return $autoimport_page_meta;
+	}
+
+	static $peeked = null;
+	if ( null !== $peeked ) {
+		return $peeked;
+	}
+
+	$slug   = autoimport_resolve_static_slug();
+	$peeked = $slug ? autoimport_peek_static_meta( $slug ) : array();
+
+	return $peeked;
+}
+
+/**
  * Check static page meta for swiper flag.
  */
 function autoimport_page_needs_swiper(): bool {
-	global $autoimport_page_meta;
-	return ! empty( $autoimport_page_meta['has_swiper'] );
+	$meta = autoimport_get_current_static_meta();
+	return ! empty( $meta['has_swiper'] );
 }
 
 /**
  * Check static page meta for quiz flag.
  */
 function autoimport_page_needs_quiz(): bool {
-	global $autoimport_page_meta;
-	return ! empty( $autoimport_page_meta['has_quiz'] );
+	$meta = autoimport_get_current_static_meta();
+	return ! empty( $meta['has_quiz'] );
 }
 
 /**
@@ -410,9 +495,9 @@ function autoimport_load_static( string $slug ): array {
  * Filter document title from static meta when needed.
  */
 function autoimport_document_title( array $title ): array {
-	global $autoimport_page_meta;
-	if ( ! empty( $autoimport_page_meta['title'] ) ) {
-		$title['title'] = $autoimport_page_meta['title'];
+	$meta = autoimport_get_current_static_meta();
+	if ( ! empty( $meta['title'] ) ) {
+		$title['title'] = $meta['title'];
 	}
 	return $title;
 }
@@ -422,13 +507,13 @@ add_filter( 'document_title_parts', 'autoimport_document_title' );
  * Output meta description from static content.
  */
 function autoimport_meta_description(): void {
-	global $autoimport_page_meta;
-	if ( empty( $autoimport_page_meta['description'] ) ) {
+	$meta = autoimport_get_current_static_meta();
+	if ( empty( $meta['description'] ) ) {
 		return;
 	}
 	printf(
 		'<meta name="description" content="%s" />' . "\n",
-		esc_attr( $autoimport_page_meta['description'] )
+		esc_attr( $meta['description'] )
 	);
 }
 add_action( 'wp_head', 'autoimport_meta_description', 1 );
@@ -437,11 +522,11 @@ add_action( 'wp_head', 'autoimport_meta_description', 1 );
  * Output extra head tags from static content (e.g. swiper).
  */
 function autoimport_extra_head(): void {
-	global $autoimport_page_meta;
-	if ( empty( $autoimport_page_meta['extra_head'] ) ) {
+	$meta = autoimport_get_current_static_meta();
+	if ( empty( $meta['extra_head'] ) ) {
 		return;
 	}
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static markup.
-	echo $autoimport_page_meta['extra_head'] . "\n";
+	echo $meta['extra_head'] . "\n";
 }
 add_action( 'wp_head', 'autoimport_extra_head', 5 );
