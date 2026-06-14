@@ -431,6 +431,46 @@ function autoimport_get_car_taxonomy_names_for_car_ids( array $car_ids, string $
 }
 
 /**
+ * Get car brand terms assigned to published cars.
+ *
+ * @return WP_Term[]
+ */
+function autoimport_get_car_brand_terms_with_cars(): array {
+	$cars_query = new WP_Query(
+		array(
+			'post_type'              => 'car',
+			'post_status'            => 'publish',
+			'posts_per_page'         => -1,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	$brands = array();
+	foreach ( $cars_query->posts as $car_id ) {
+		$terms = wp_get_post_terms( (int) $car_id, 'car_brand' );
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			continue;
+		}
+		foreach ( $terms as $term ) {
+			$brands[ $term->term_id ] = $term;
+		}
+	}
+
+	$sorted = array_values( $brands );
+	usort(
+		$sorted,
+		static function ( WP_Term $a, WP_Term $b ): int {
+			return strnatcasecmp( $a->name, $b->name );
+		}
+	);
+
+	return $sorted;
+}
+
+/**
  * Query published cars with engine power up to the given limit.
  */
 function autoimport_get_cars_up_to_power_query( int $max_power = 160 ): WP_Query {

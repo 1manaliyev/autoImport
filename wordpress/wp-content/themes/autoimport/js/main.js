@@ -965,7 +965,8 @@
     btn.addEventListener("click", function () {
       var key = btn.getAttribute("data-open-segment");
       if (key === "quiz") {
-        window.location.href = resolveAssetUrl("quiz.html");
+        window.location.href =
+          (window.autoimportTheme && window.autoimportTheme.quizUrl) || "/quiz/";
         return;
       }
       fillSegmentModal(key);

@@ -734,7 +734,9 @@ h3 {
 }
 
 .brand-tile .brand-logo {
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 78px;
   height: 34px;
   filter: none;
@@ -742,20 +744,15 @@ h3 {
 }
 
 .brand-logo__img {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: opacity 0.25s ease;
+  filter: grayscale(1);
+  transition: filter 0.25s ease;
 }
 
-.brand-logo__img--gold {
-  opacity: 0;
-}
-
-.brand-tile:hover .brand-logo__img--gold {
-  opacity: 1;
+.brand-tile:hover .brand-logo__img {
+  filter: grayscale(0);
 }
 
 /* Segment cards 3.4 */

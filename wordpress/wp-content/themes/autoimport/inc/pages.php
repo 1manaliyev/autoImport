@@ -33,7 +33,6 @@ function autoimport_get_page_map(): array {
 		'contacts'           => 'Контакты',
 		'quiz'               => 'Квиз «Подбор авто за 1 минуту»',
 		'power-up-to-160'     => 'Автомобили до 160 л.с.',
-		'sitemap'            => 'Карта сайта',
 	);
 }
 

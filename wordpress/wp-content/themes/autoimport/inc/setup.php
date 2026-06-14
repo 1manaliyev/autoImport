@@ -397,6 +397,14 @@ function autoimport_enqueue_assets(): void {
 		true
 	);
 
+	wp_localize_script(
+		'autoimport-main',
+		'autoimportTheme',
+		array(
+			'quizUrl' => home_url( '/quiz/' ),
+		)
+	);
+
 	if ( is_page( 'quiz' ) || autoimport_page_needs_quiz() ) {
 		wp_enqueue_script(
 			'autoimport-quiz',
